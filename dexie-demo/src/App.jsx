@@ -1,78 +1,77 @@
-import React, { useEffect, useState } from 'react'
-import db from '../src/db/db'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import UserForm from './components/UserForm';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import Marketplace from './components/Marketplace';
+import ShoppingCart from './components/ShoppingCart';
+import Checkout from './components/Checkout';
+import Orders from './components/Orders';
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const currentUser = sessionStorage.getItem('currentUser');
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 const App = () => {
-  const [name,setName] = useState('')
-  const [email,setEmail] = useState('')
-  const [users,setUsers] = useState([])
-
-  useEffect(()=>{
-    fetchUsers()
-  })
-  const fetchUsers = async () => {
-    const allUsers = await db.users.toArray();
-    setUsers(allUsers || []);
-  };
-
- const handleSubmit = async (e) => {
-  
-    e.preventDefault();
-    if (!name || !email) return;
-
-    await db.users.add({ name, email });
-    setName("");
-    setEmail("");
-    fetchUsers();
-  };
-  function setCookie(name, value, days = 1) {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`;
-}
-setCookie("email", email);
-setCookie("username", name);
-
   return (
-    <div
-  style={{
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  }}
->
-  <div style={{ width: 320, padding: 20 }}>
-    <h2 style={{ textAlign: "center" }}>Dexie User Store</h2>
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<UserForm />} />
+        <Route path="/login" element={<Login />} />
 
-    <form
-      onSubmit={handleSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: 10 }}
-    >
-      <input
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <button>Save</button>
-    </form>
+        {/* Protected Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute>
+              <Marketplace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute>
+              <ShoppingCart />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
 
-    <ul style={{ marginTop: 20 }}>
-      {users.map((user) => (
-        <li key={user.id}>
-          {user.name} - {user.email}
-        </li>
-      ))}
-    </ul>
-  </div>
-</div>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+};
 
-
-  )
-}
-
-export default App
+export default App;

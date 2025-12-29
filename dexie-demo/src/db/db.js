@@ -1,8 +1,9 @@
 import Dexie from "dexie"
- const db = new Dexie("UserDatabase")
+const db = new Dexie("UserDatabase")
 db.version(1).stores({
-    users:"++id, name, email"
+  users: '++id, email',
+  cart: '++id, userId, productId',
+  orders: '++id, userId, createdAt'
 });
-// ✔ Creates IndexedDB named UserDatabase
-// ✔ Table: users
+
 export default db

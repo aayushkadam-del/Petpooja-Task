@@ -1,0 +1,144 @@
+
+export const STATIC_PRODUCTS = [
+  {
+    id: 1,
+    name: 'iPhone 15 Pro Max',
+    price: 1199.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=500&h=500&fit=crop',
+    description: 'Latest flagship smartphone with advanced camera system, A17 Pro chip, and 120Hz display.',
+    specs: ['6.7" Display', 'A17 Pro Chip', '48MP Camera', '120Hz ProMotion'],
+    inStock: true,
+  availableCountries: ["USA", "India"],
+  },
+  {
+    id: 2,
+    name: 'MacBook Pro 16"',
+    price: 2499.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&h=500&fit=crop',
+    description: 'Powerful laptop with M3 Max chip, perfect for professionals and creators.',
+    specs: ['M3 Max Chip', '36GB RAM', '512GB SSD', 'Liquid Retina XDR'],
+    inStock: true,
+  availableCountries: ["USA", "India"],
+
+  },
+  {
+    id: 3,
+    name: 'Sony WH-1000XM5 Headphones',
+    price: 399.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
+    description: 'Industry-leading noise cancelling wireless headphones with premium sound quality.',
+    specs: ['Active Noise Cancelling', '30hr Battery', 'Bluetooth 5.3', 'Premium Comfort'],
+    inStock: true,
+  availableCountries: ["USA",],
+
+  },
+  {
+    id: 4,
+    name: 'Rolex Submariner Watch',
+    price: 8999.99,
+    category: 'Accessories',
+    image: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=500&h=500&fit=crop',
+    description: 'Iconic luxury sports watch with automatic movement and waterproof design.',
+    specs: ['Stainless Steel', 'Automatic Movement', '300m Waterproof', 'Cyclops Lens'],
+    inStock: true,
+    availableCountries: ["USA"]
+  },
+  {
+    id: 5,
+    name: 'Nike Air Max 90',
+    price: 129.99,
+    category: 'Clothing',
+    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop',
+    description: 'Classic basketball-inspired sneakers with visible Air cushioning.',
+    specs: ['Leather Upper', 'Air Cushioning', 'Durable Sole', 'Multiple Colors'],
+    inStock: true,
+    availableCountries: ["UK"]
+
+  },
+  {
+    id: 6,
+    name: 'North Face Backpack',
+    price: 179.99,
+    category: 'Accessories',
+    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop',
+    description: 'Durable and spacious backpack for outdoor adventures and daily use.',
+    specs: ['40L Capacity', 'Waterproof', 'Laptop Compartment', 'Ergonomic Design'],
+    inStock: true,
+    availableCountries: ["UK", "India"]
+
+  },
+  {
+    id: 7,
+    name: 'Samsung 4K Smart TV',
+    price: 699.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=500&h=500&fit=crop',
+    description: '55-inch 4K QLED TV with stunning picture quality and smart features.',
+    specs: ['4K Resolution', 'QLED Technology', 'Smart TV', '120Hz Refresh'],
+    inStock: true,
+    availableCountries: ["UK","India"]
+
+  },
+  {
+    id: 8,
+    name: 'Blue Light Glasses',
+    price: 89.99,
+    category: 'Accessories',
+    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500&h=500&fit=crop',
+    description: 'Stylish glasses that filter blue light from screens for eye protection.',
+    specs: ['Anti-Glare', 'UV Protection', 'Lightweight', 'Multiple Styles'],
+    inStock: true,
+    availableCountries: ["UK"]
+
+  },
+  {
+    id: 9,
+    name: 'Dyson V15 Vacuum',
+    price: 749.99,
+    category: 'Home',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=500&fit=crop',
+    description: 'Advanced cordless vacuum with laser dust detection and powerful suction.',
+    specs: ['Laser Detection', '60min Runtime', 'HEPA Filter', 'Multiple Attachments'],
+    inStock: true,
+    availableCountries: ["USA"]
+  },
+  {
+    id: 10,
+    name: 'PlayStation 5',
+    price: 499.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1578303512moments839-2e391f5bef8f?w=500&h=500&fit=crop',
+    description: 'Next-generation gaming console with stunning graphics and immersive gameplay.',
+    specs: ['4K Gaming', '120fps Support', 'SSD Storage', 'DualSense Controller'],
+    inStock: false,
+    availableCountries: ["USA"]
+
+  },
+  {
+    id: 11,
+    name: 'Kindle Paperwhite',
+    price: 149.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&h=500&fit=crop',
+    description: 'Premium e-reader with waterproof design and crisp display.',
+    specs: ['Waterproof', 'Front-Lit Display', '6" Screen', 'Months Battery'],
+    inStock: true,
+    availableCountries: ["UK","India"]
+
+  },
+  {
+    id: 12,
+    name: 'Apple AirPods Pro',
+    price: 249.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500&h=500&fit=crop',
+    description: 'Premium wireless earbuds with active noise cancellation and spatial audio.',
+    specs: ['Active Noise Cancelling', 'Spatial Audio', 'MagSafe Charging', '6hr Battery'],
+    inStock: true,
+    availableCountries: ["UK","India"]
+
+  }
+];
