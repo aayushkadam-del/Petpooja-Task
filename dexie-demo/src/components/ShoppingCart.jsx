@@ -15,24 +15,45 @@ export default function ShoppingCart() {
 
   const loadCart = async () => {
     try {
-    const items = await db.cart.where('userId').equals(currentUser.id).toArray();
+      const cartEntries = await db.cart.where('userId').equals(currentUser.id).toArray();
 
-const groupedItems = items.reduce((acc, item) => {
-  if (!acc[item.productId]) {
-    acc[item.productId] = {
-      ...item,
-      quantity: 1,
-      cartIds: [item.id]
-    };
-  } else {
-    acc[item.productId].quantity += 1;
-    acc[item.productId].cartIds.push(item.id);
-  }
-  return acc;
-}, {});
+      if (cartEntries.length === 0) {
+        setCartItems([]);
+        setLoading(false);
+        return;
+      }
 
-setCartItems(Object.values(groupedItems));
+      // Get unique product IDs
+      const productIds = [...new Set(cartEntries.map(e => e.productId))];
 
+      // Fetch current product data (including discount)
+      const products = await db.products.where('id').anyOf(productIds).toArray();
+      const productMap = {};
+      products.forEach(p => {
+        productMap[p.id] = p;
+      });
+
+      // Group + enrich with fresh product data
+      const grouped = cartEntries.reduce((acc, entry) => {
+        const pid = entry.productId;
+        if (!acc[pid]) {
+          const prod = productMap[pid] || {};
+          acc[pid] = {
+            ...entry, // name, price, image etc. (assuming stored at add-to-cart time)
+            productId: pid,
+            quantity: 0,
+            cartIds: [],
+            // Current discount & original price
+            discountPercentage: prod.discountPercentage || 0,
+            originalPrice: prod.price || entry.price,
+          };
+        }
+        acc[pid].quantity += 1;
+        acc[pid].cartIds.push(entry.id);
+        return acc;
+      }, {});
+
+      setCartItems(Object.values(grouped));
       setLoading(false);
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -40,30 +61,38 @@ setCartItems(Object.values(groupedItems));
     }
   };
 
-  const removeItem = async (cartItemId) => {
+  // Fixed: delete ALL entries for this product
+  const removeItem = async (productId) => {
     try {
-      await db.cart.delete(cartItemId);
-      setCartItems(cartItems.filter(item => item.id !== cartItemId));
+      await db.cart.where({ userId: currentUser.id, productId }).delete();
+      setCartItems(prev => prev.filter(item => item.productId !== productId));
     } catch (error) {
       console.error('Error removing item:', error);
     }
   };
 
-const calculateTotal = () => {
-  return cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-};
-
-
-  const handleCheckout = () => {
-    navigate('/checkout');
+  const calculateSubtotal = () => {
+    return cartItems.reduce((sum, item) => {
+      const priceAfterDiscount = item.originalPrice * (1 - item.discountPercentage / 100);
+      return sum + priceAfterDiscount * item.quantity;
+    }, 0);
   };
 
-  const handleContinueShopping = () => {
-    navigate('/marketplace');
+  const calculateSavings = () => {
+    return cartItems.reduce((sum, item) => {
+      if (item.discountPercentage === 0) return sum;
+      const discountPerUnit = item.originalPrice * (item.discountPercentage / 100);
+      return sum + discountPerUnit * item.quantity;
+    }, 0);
   };
+
+  const subtotal = calculateSubtotal();
+  const savings = calculateSavings();
+  const tax = subtotal * 0.1;
+  const total = subtotal + tax;
+
+  const handleCheckout = () => navigate('/checkout');
+  const handleContinueShopping = () => navigate('/marketplace');
 
   if (loading) {
     return (
@@ -75,7 +104,6 @@ const calculateTotal = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', margin: 0, padding: 0 }}>
-      {/* Amazon-style Header */}
       <header style={{
         background: '#131921',
         padding: '12px 20px',
@@ -85,7 +113,6 @@ const calculateTotal = () => {
         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', maxWidth: '1500px', margin: '0 auto' }}>
-          {/* Logo */}
           <div
             onClick={() => navigate('/dashboard')}
             style={{
@@ -113,8 +140,8 @@ const calculateTotal = () => {
               fontSize: '13px',
               transition: 'background 0.2s'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             Continue Shopping
           </button>
@@ -122,12 +149,12 @@ const calculateTotal = () => {
       </header>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-        {/* Page Title */}
         <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '20px', color: '#333' }}>
           Shopping Cart
         </h1>
 
         {cartItems.length === 0 ? (
+          // ... empty cart unchanged ...
           <div style={{
             background: 'white',
             borderRadius: '8px',
@@ -137,10 +164,10 @@ const calculateTotal = () => {
           }}>
             <ShoppingCartIcon size={80} style={{ color: '#ddd', margin: '0 auto 20px' }} />
             <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px', color: '#333' }}>
-              Your Amazon Cart is empty
+              Your Cart is empty
             </h2>
             <p style={{ color: '#666', marginBottom: '30px', fontSize: '16px' }}>
-              Add items to your cart to get started. Check out our deals!
+              Add items to get started.
             </p>
             <button
               onClick={handleContinueShopping}
@@ -155,15 +182,14 @@ const calculateTotal = () => {
                 fontSize: '16px',
                 transition: 'background 0.2s'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#E87E04'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#FF9900'}
+              onMouseEnter={e => e.currentTarget.style.background = '#E87E04'}
+              onMouseLeave={e => e.currentTarget.style.background = '#FF9900'}
             >
               Continue Shopping
             </button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px' }}>
-            {/* Cart Items Section */}
             <div style={{
               background: 'white',
               borderRadius: '8px',
@@ -171,173 +197,185 @@ const calculateTotal = () => {
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
             }}>
               <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '15px' }}>
-                Items in your cart ({cartItems.length})
+                Items ({cartItems.length})
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {cartItems.map((item, index) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      gap: '15px',
-                      paddingBottom: '15px',
-                      borderBottom: index < cartItems.length - 1 ? '1px solid #eee' : 'none'
-                    }}
-                  >
-                    {/* Product Image */}
-                    <div style={{
-                      fontSize: '60px',
-                      minWidth: '100px',
-                      textAlign: 'center',
-                      background: '#f5f5f5',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                        <img src={item.image} alt={item.name} style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'contain' }} />
-                    </div>
+                {cartItems.map((item, index) => {
+                  const discountedPrice = item.originalPrice * (1 - item.discountPercentage / 100);
+                  const showDiscount = item.discountPercentage > 0;
 
-                    {/* Product Details */}
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px', color: '#0066c0', cursor: 'pointer' }}>
-                        {item.name}
-                      </h3>
-                      <div style={{ display: 'flex', gap: '15px', marginBottom: '10px', fontSize: '13px' }}>
-                        <span style={{ color: '#666' }}>In Stock</span>
-                        <span style={{ color: '#666' }}>Free Shipping</span>
+                  return (
+                    <div
+                      key={item.productId}  // better key
+                      style={{
+                        display: 'flex',
+                        gap: '15px',
+                        paddingBottom: '15px',
+                        borderBottom: index < cartItems.length - 1 ? '1px solid #eee' : 'none'
+                      }}
+                    >
+                      <div style={{
+                        minWidth: '100px',
+                        height: '100px',
+                        background: '#f5f5f5',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <img
+                          src={item.image || 'https://via.placeholder.com/100?text=No+Image'}
+                          alt={item.name}
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        />
                       </div>
-                      <p style={{ color: '#B12704', fontWeight: '700', fontSize: '18px', marginBottom: '12px' }}>
-                        ${item.price.toFixed(2)}
-                      </p>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#0066c0',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          padding: '0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'color 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#c7254e'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#0066c0'}
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
-  Quantity: <strong>{item.quantity}</strong>
-</div>
 
-                  </div>
-                ))}
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '500', marginBottom: '6px', color: '#0066c0' }}>
+                          {item.name}
+                        </h3>
+
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '18px', fontWeight: '700', color: '#B12704' }}>
+                            ₹{discountedPrice.toFixed(2)}
+                          </span>
+
+                          {showDiscount && (
+                            <>
+                              <span style={{ fontSize: '14px', color: '#555', textDecoration: 'line-through' }}>
+                                ₹{item.originalPrice.toFixed(2)}
+                              </span>
+                              <span style={{ color: '#c7511f', fontWeight: '600', fontSize: '13px' }}>
+                                -{item.discountPercentage}%
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '13px', color: showDiscount ? '#007600' : '#555', marginBottom: '8px' }}>
+                          {showDiscount ? 'Discount applied' : 'No discount'}
+                        </div>
+
+                        <button
+                          onClick={() => removeItem(item.productId)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#c40000',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+
+                      <div style={{ fontSize: '14px', color: '#111' }}>
+                        Qty: <strong>{item.quantity}</strong>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Order Summary Sidebar */}
+            {/* Sidebar */}
             <div>
               <div style={{
                 background: 'white',
                 borderRadius: '8px',
-                padding: '15px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                padding: '16px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                 position: 'sticky',
                 top: '80px'
               }}>
-                {/* Subtotal Box */}
-                <div style={{
-                  padding: '12px 0',
-                  marginBottom: '12px',
-                  borderBottom: '1px solid #eee'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-                    <span>Subtotal:</span>
-                    <span>${calculateTotal().toFixed(2)}</span>
+                <div style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                    <span>Subtotal</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-                    <span>Shipping:</span>
-                    <span style={{ color: '#4caf50', fontWeight: '700' }}>FREE</span>
+
+                  {savings > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: '#c7511f' }}>
+                      <span>Savings</span>
+                      <span>-₹{savings.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                    <span>Shipping</span>
+                    <span style={{ color: '#007600', fontWeight: '600' }}>FREE</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                    <span>Estimated Tax:</span>
-                    <span>${(calculateTotal() * 0.1).toFixed(2)}</span>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span>Estimated Tax</span>
+                    <span>₹{tax.toFixed(2)}</span>
                   </div>
                 </div>
 
-                {/* Total Box */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   fontSize: '18px',
                   fontWeight: '700',
-                  marginBottom: '15px',
-                  paddingBottom: '12px',
-                  borderBottom: '1px solid #eee'
+                  margin: '16px 0',
+                  color: '#111'
                 }}>
-                  <span>Total:</span>
-                  <span style={{ color: '#B12704' }}>${(calculateTotal() * 1.1).toFixed(2)}</span>
+                  <span>Total</span>
+                  <span style={{ color: '#B12704' }}>₹{total.toFixed(2)}</span>
                 </div>
 
-                {/* Checkout Button */}
                 <button
                   onClick={handleCheckout}
                   style={{
                     width: '100%',
-                    padding: '10px',
+                    padding: '12px',
                     background: '#FF9900',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
                     fontWeight: '700',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     cursor: 'pointer',
-                    transition: 'background 0.2s',
-                    marginBottom: '10px'
+                    marginBottom: '12px'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#E87E04'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#FF9900'}
                 >
                   Proceed to Checkout
                 </button>
 
-                {/* Continue Shopping Link */}
                 <button
                   onClick={handleContinueShopping}
                   style={{
                     width: '100%',
                     padding: '10px',
-                    background: '#f0f0f0',
-                    color: '#333',
+                    background: '#f5f5f5',
+                    color: '#111',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
                     fontWeight: '600',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    transition: 'background 0.2s'
+                    fontSize: '14px',
+                    cursor: 'pointer'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#f0f0f0'}
                 >
                   Continue Shopping
                 </button>
               </div>
 
-              {/* Promo Code */}
+              {/* Promo code (unchanged) */}
               <div style={{
                 background: 'white',
                 borderRadius: '8px',
                 padding: '15px',
-                marginTop: '15px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                marginTop: '16px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
+                <label style={{ fontWeight: '700', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                   Have a promo code?
                 </label>
                 <input
@@ -348,8 +386,7 @@ const calculateTotal = () => {
                     padding: '8px',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '13px',
-                    boxSizing: 'border-box'
+                    fontSize: '13px'
                   }}
                 />
               </div>

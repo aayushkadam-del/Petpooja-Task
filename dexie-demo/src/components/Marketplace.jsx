@@ -1,43 +1,69 @@
-import { useState } from 'react';
-import { ShoppingCart, Search, Home, LogOut } from 'lucide-react';
-import { STATIC_PRODUCTS } from '../data/products';
-import { useNavigate } from 'react-router-dom';
-import db from '../db/db';
-import { Button } from './ui/button';
+import { useState, useEffect } from "react";
+import { ShoppingCart, Search, Home, LogOut, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import db from "../db/db";
+import { STATIC_PRODUCTS } from "../data/products";
 export default function Marketplace() {
   const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [message, setMessage] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+  const [message, setMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Get unique categories
-  const categories = ['All', ...new Set(STATIC_PRODUCTS.map(p => p.category))];
-const userCountry = currentUser?.country;
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
 
-  // Filter products
-const filteredProducts = STATIC_PRODUCTS.filter(product => {
-  const matchesCategory =
-    selectedCategory === 'All' || product.category === selectedCategory;
+  useEffect(() => {
+    if (!currentUser?.id) {
+      navigate("/login");
+      return;
+    }
+    loadProducts();
+  }, []);
 
-  const matchesSearch =
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchQuery.toLowerCase());
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      const dbProducts = await db.products.toArray();
+      const allProducts = dbProducts.length > 0 ? dbProducts : STATIC_PRODUCTS;
+      setProducts(allProducts);
+    } catch (err) {
+      console.error(err);
+      setProducts(STATIC_PRODUCTS);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const matchesCountry =
-    !userCountry || product.availableCountries?.includes(userCountry);
+  const categories = [
+    "All",
+    ...new Set(products.map((p) => p.category || "Uncategorized")),
+  ];
 
-  return matchesCategory && matchesSearch && matchesCountry;
-});
-    
+  const filteredProducts = products.filter((p) => {
+    const matchesCategory =
+      selectedCategory === "All" || p.category === selectedCategory;
+    const matchesSearch =
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const inStock = (p.quantity ?? 1) > 0;
+    return matchesCategory && matchesSearch && inStock;
+  });
 
   const handleAddToCart = async () => {
     if (!selectedProduct) return;
 
+    const available = selectedProduct.quantity ?? 999;
+    if (quantity > available) {
+      setMessage(`Only ₹{available} left in stock!`);
+      setTimeout(() => setMessage(""), 2200);
+      return;
+    }
+
     try {
-      // Add item to cart table
+      // Add multiple items if quantity > 1
       for (let i = 0; i < quantity; i++) {
         await db.cart.add({
           userId: currentUser.id,
@@ -45,576 +71,507 @@ const filteredProducts = STATIC_PRODUCTS.filter(product => {
           name: selectedProduct.name,
           price: selectedProduct.price,
           image: selectedProduct.image,
-          addedAt: new Date()
+          addedAt: new Date(),
         });
       }
-      setMessage(`✓ Added ${quantity} item(s) to cart!`);
+
+      // Decrease stock
+      if (selectedProduct.quantity !== undefined) {
+        await db.products.update(selectedProduct.id, {
+          quantity: Math.max(0, selectedProduct.quantity - quantity),
+        });
+        loadProducts(); // refresh stock
+      }
+
+      setMessage(`Added ₹{quantity} to your cart`);
       setTimeout(() => {
-        setMessage('');
+        setMessage("");
         setSelectedProduct(null);
         setQuantity(1);
-      }, 2000);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      setMessage('Error adding to cart');
+      }, 1800);
+    } catch (err) {
+      console.error(err);
+      setMessage("Could not add to cart");
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('currentUser');
-    navigate('/');
+    sessionStorage.removeItem("currentUser");
+    navigate("/");
   };
 
-  return (<>
-
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', margin: 0, padding: 0 }}>
-      {/* Amazon-style Header */}
-      <header style={{
-        background: '#131921',
-        padding: '12px 20px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', maxWidth: '1500px', margin: '0 auto' }}>
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f5f5",
+        fontFamily: "Arial, Helvetica, sans-serif",
+      }}
+    >
+      {/* Header – Amazon style */}
+      <header
+        style={{
+          background: "#131921",
+          color: "white",
+          padding: "10px 20px",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1500px",
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
           {/* Logo */}
           <div
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate("/dashboard")}
             style={{
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: '#FFB81C',
-              fontSize: '24px',
-              fontWeight: 'bold',
-              minWidth: '150px'
+              cursor: "pointer",
+              color: "#ff9900",
+              fontSize: "22px",
+              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            <Home size={24} /> Shop
+            <Home size={24} /> Marketplace
           </div>
 
-          {/* Search Bar */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            background: '#fff',
-            borderRadius: '4px',
-            padding: '8px 12px'
-          }}>
-            <Search size={20} style={{ color: '#666', marginRight: '8px' }} />
+          {/* Search */}
+          <div
+            style={{
+              flex: 1,
+              background: "white",
+              borderRadius: "4px",
+              display: "flex",
+              alignItems: "center",
+              padding: "6px 12px",
+            }}
+          >
+            <Search size={18} style={{ color: "#666", marginRight: "8px" }} />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search for products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                border: 'none',
-                outline: 'none',
+                border: "none",
+                outline: "none",
                 flex: 1,
-                fontSize: '14px',
-                fontFamily: 'inherit'
+                fontSize: "15px",
               }}
             />
           </div>
 
-          {/* Cart & Logout */}
-          <button
-            onClick={() => navigate('/cart')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#FFB81C',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px',
-              padding: '8px 12px',
-              borderRadius: '4px',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 184, 28, 0.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <ShoppingCart size={24} /> Cart
-          </button>
+          {/* Actions */}
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <button
+              onClick={() => navigate("/cart")}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#ff9900",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              <ShoppingCart size={22} /> Cart
+            </button>
 
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              padding: '8px 12px',
-              borderRadius: '4px',
-              fontSize: '13px',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <LogOut size={16} style={{ marginRight: '4px' }} /> Logout
-          </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#ddd",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              <LogOut size={18} /> Sign out
+            </button>
+          </div>
         </div>
       </header>
 
-      <div style={{ display: 'flex', maxWidth: '1500px', margin: '0 auto', minHeight: 'calc(100vh - 70px)' }}>
-        {/* Left Sidebar - Categories */}
-        <aside style={{
-          background: '#fff',
-          width: '220px',
-          padding: '20px 0',
-          borderRight: '1px solid #ddd',
-          overflowY: 'auto',
-          maxHeight: 'calc(100vh - 70px)'
-        }}>
-          <h3 style={{
-            padding: '0 20px',
-            marginBottom: '15px',
-            fontSize: '16px',
-            fontWeight: '700',
-            color: '#333'
-          }}>
-            Categories
-          </h3>
-          {categories.map(category => (
+      <div style={{ maxWidth: "1500px", margin: "0 auto", display: "flex" }}>
+        {/* Sidebar – Categories */}
+        <aside
+          style={{
+            width: "240px",
+            background: "white",
+            padding: "20px 0",
+            borderRight: "1px solid #ddd",
+            height: "calc(100vh - 64px)",
+            overflowY: "auto",
+            position: "sticky",
+            top: "64px",
+          }}
+        >
+          <div
+            style={{
+              padding: "0 20px",
+              marginBottom: "16px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              color: "#0F1111",
+            }}
+          >
+            Departments
+          </div>
+          {categories.map((cat) => (
             <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
               style={{
-                width: '100%',
-                padding: '12px 20px',
-                border: 'none',
-                background: selectedCategory === category ? '#e8f0f9' : 'transparent',
-                borderLeft: selectedCategory === category ? '3px solid #FF9900' : 'none',
-                color: selectedCategory === category ? '#146eb4' : '#333',
-                textAlign: 'left',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: selectedCategory === category ? '700' : '400',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                if (selectedCategory !== category) {
-                  e.currentTarget.style.background = '#f0f0f0';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedCategory !== category) {
-                  e.currentTarget.style.background = 'transparent';
-                }
+                width: "100%",
+                padding: "10px 20px",
+                textAlign: "left",
+                background:
+                  selectedCategory === cat ? "#f0f8ff" : "transparent",
+                border: "none",
+                borderLeft:
+                  selectedCategory === cat ? "4px solid #ff9900" : "none",
+                color: selectedCategory === cat ? "#146eb4" : "#0F1111",
+                fontWeight: selectedCategory === cat ? "600" : "400",
+                cursor: "pointer",
               }}
             >
-              {category}
+              {cat}
             </button>
           ))}
         </aside>
 
-        {/* Main Content - Products */}
-        <main style={{
-          flex: 1,
-          padding: '20px'
-        }}>
-          {/* Results Info */}
-          <div style={{
-            marginBottom: '20px',
-            fontSize: '14px',
-            color: '#666'
-          }}>
-            Showing {filteredProducts.length} results
-            {selectedCategory !== 'All' && ` in ${selectedCategory}`}
-            {searchQuery && ` for "${searchQuery}"`}
-          </div>
-
-          {/* Products Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '16px'
-          }}>
-            {filteredProducts.map(product => (
+        {/* Main */}
+        <main style={{ flex: 1, padding: "24px" }}>
+          {loading ? (
+            <div
+              style={{ textAlign: "center", padding: "80px 0", color: "#555" }}
+            >
+              Loading products...
+            </div>
+          ) : (
+            <>
               <div
-                key={product.id}
-                onClick={() => setSelectedProduct(product)}
                 style={{
-                  background: '#fff',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid #ddd'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                  marginBottom: "20px",
+                  color: "#555",
+                  fontSize: "14px",
                 }}
               >
-                {/* Product Image */}
-                <div style={{
-                  textAlign: 'center',
-                  padding: '12px',
-                  background: '#f5f5f5',
-                  minHeight: '180px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <img src={product.image} alt={product.name} style={{ maxWidth: '100%', maxHeight: '160px', objectFit: 'cover', borderRadius: '8px' }} />
-                </div>
-
-                {/* Product Info */}
-                <div style={{ padding: '12px' }}>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    marginBottom: '8px',
-                    lineHeight: '1.3',
-                    color: '#333',
-                    minHeight: '32px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {product.name}
-                  </h3>
-
-                  {/* Rating & Reviews */}
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#FF9900',
-                    marginBottom: '8px'
-                  }}>
-                    {'⭐'.repeat(4)} 
-                  </div>
-
-                  {/* Price */}
-                  <div style={{ marginBottom: '8px' }}>
-                    <span style={{
-                      fontSize: '18px',
-                      fontWeight: '700',
-                      color: '#B12704'
-                    }}>
-                      ${product.price.toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Stock Status */}
-                  <span style={{
-                    display: 'inline-block',
-                    fontSize: '11px',
-                    padding: '4px 8px',
-                    background: product.inStock ? '#4caf50' : '#f44336',
-                    color: 'white',
-                    borderRadius: '3px',
-                    marginBottom: '8px',
-                    fontWeight: '600'
-                  }}>
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
-                  </span>
-
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedProduct(product);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      background: '#FF9900',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      cursor: product.inStock ? 'pointer' : 'not-allowed',
-                      opacity: product.inStock ? 1 : 0.5,
-                      transition: 'background 0.2s'
-                    }}
-                    disabled={!product.inStock}
-                    onMouseEnter={(e) => {
-                      if (product.inStock) e.currentTarget.style.background = '#FF9900';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (product.inStock) e.currentTarget.style.background = '#FF9900';
-                    }}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
+                {filteredProducts.length} results
+                {selectedCategory !== "All" && ` in ₹{selectedCategory}`}
+                {searchQuery && ` for "₹{searchQuery}"`}
               </div>
-            ))}
-          </div>
 
-          {filteredProducts.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
-              <p style={{ fontSize: '18px', marginBottom: '10px' }}>No products found</p>
-              <p style={{ fontSize: '14px' }}>Try adjusting your search or category filter</p>
-            </div>
+              {filteredProducts.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "60px 0",
+                    color: "#777",
+                  }}
+                >
+                  No products match your filters.
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(240px, 1fr))",
+                    gap: "16px",
+                  }}
+                >
+                  {filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => setSelectedProduct(product)}
+                      style={{
+                        background: "white",
+                        border: "1px solid #ddd",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 4px 12px rgba(0,0,0,0.12)";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = "none";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "220px",
+                          background: "#fafafa",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "12px",
+                        }}
+                      >
+                        <img
+                          src={
+                            product.image ||
+                            "https://via.placeholder.com/200?text=No+Image"
+                          }
+                          alt={product.name}
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                      <div style={{ padding: "12px" }}>
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            color: "#0F1111",
+                            marginBottom: "6px",
+                            height: "40px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {product.name}
+                        </div>
+                        <div
+                          style={{
+                            color: "#B12704",
+                            fontSize: "18px",
+                            fontWeight: "bold",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          ₹{product.price.toFixed(2)}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: product.quantity > 0 ? "#007600" : "#c40000",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          {product.quantity > 0
+                            ? `₹{product.quantity} in stock`
+                            : "Out of stock"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
 
-      {/* Product Detail Modal */}
- {selectedProduct && (
-  <div style={{
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.55)',
-    backdropFilter: 'blur(6px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '24px'
-  }}>
-    <div style={{
-      background: '#fff',
-      borderRadius: '16px',
-      width: '100%',
-      maxWidth: '640px',
-      maxHeight: '90vh',
-      overflowY: 'auto',
-      boxShadow: '0 30px 80px rgba(0,0,0,0.35)',
-      position: 'relative',
-      animation: 'fadeIn 0.25s ease'
-    }}>
-
-      {/* Close */}
-      <button
-        onClick={() => {
-          setSelectedProduct(null);
-          setMessage('');
-          setQuantity(1);
-        }}
-        style={{
-          position: 'absolute',
-          top: '16px',
-          right: '16px',
-          background: '#f0f0f0',
-          border: 'none',
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          fontSize: '18px',
-          cursor: 'pointer',
-          color: '#555'
-        }}
-      >
-        ✕
-      </button>
-
-      {/* Image */}
-      <div style={{
-        background: '#f5f5f5',
-        borderTopLeftRadius: '16px',
-        borderTopRightRadius: '16px',
-        padding: '40px',
-        textAlign: 'center',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '300px'
-      }}>
-        <img src={selectedProduct.image} alt={selectedProduct.name} style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain' }} />
-      </div>
-
-      {/* Content */}
-      <div style={{ padding: '28px' }}>
-        <h2 style={{
-          fontSize: '26px',
-          fontWeight: '700',
-          marginBottom: '8px',
-          color: '#333'
-        }}>
-          {selectedProduct.name}
-        </h2>
-
-        {/* Rating */}
-        <div style={{
-          color: '#FF9900',
-          fontWeight: '600',
-          marginBottom: '16px'
-        }}>
-          ⭐⭐⭐⭐☆ <span style={{ color: '#666', fontSize: '14px' }}>(1,234 reviews)</span>
-        </div>
-
-        <p style={{
-          color: '#666',
-          fontSize: '15px',
-          lineHeight: '1.7',
-          marginBottom: '24px'
-        }}>
-          {selectedProduct.description}
-        </p>
-
-        {/* Price */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '20px',
-          background: '#fafafa',
-          borderRadius: '12px',
-          marginBottom: '20px'
-        }}>
-          <div>
-            <div style={{
-              fontSize: '34px',
-              fontWeight: '800',
-              color: '#B12704'
-            }}>
-              ${selectedProduct.price.toFixed(2)}
-            </div>
-            <div style={{ fontSize: '13px', color: '#666' }}>
-              FREE Shipping
-            </div>
-          </div>
-
-          <span style={{
-            fontSize: '14px',
-            padding: '8px 14px',
-            borderRadius: '999px',
-            background: selectedProduct.inStock ? '#d4edda' : '#f8d7da',
-            color: selectedProduct.inStock ? '#155724' : '#721c24',
-            fontWeight: '700'
-          }}>
-            {selectedProduct.inStock ? 'In Stock' : 'Out of Stock'}
-          </span>
-        </div>
-
-        {/* Specs */}
-        <div style={{ marginBottom: '24px' }}>
-          <h4 style={{
-            fontSize: '16px',
-            fontWeight: '700',
-            marginBottom: '12px'
-          }}>
-            Key Features
-          </h4>
-          <ul style={{
-            padding: 0,
-            margin: 0,
-            listStyle: 'none',
-            display: 'grid',
-            gap: '10px'
-          }}>
-            {selectedProduct.specs?.map((spec, idx) => (
-              <li key={idx} style={{
-                background: '#f5f5f5',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                color: '#555'
-              }}>
-                ✓ {spec}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Quantity */}
-        {selectedProduct.inStock && (
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontWeight: '700',
-              marginBottom: '8px'
-            }}>
-              Quantity
-            </label>
-            <select
-              value={quantity}
-              onChange={(e) => setQuantity(+e.target.value)}
+      {/* Product Detail Modal – Amazon-like */}
+      {selectedProduct && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            padding: "16px",
+          }}
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "8px",
+              maxWidth: "900px",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "row",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Left – Image */}
+            <div
               style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid #ddd',
-                fontSize: '14px'
+                flex: "1 1 45%",
+                padding: "32px",
+                background: "#fafafa",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {[...Array(10)].map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}</option>
-              ))}
-            </select>
+              <img
+                src={selectedProduct.image || "https://via.placeholder.com/400"}
+                alt={selectedProduct.name}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "500px",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+
+            {/* Right – Info */}
+            <div
+              style={{
+                flex: "1 1 55%",
+                padding: "32px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              <button
+                onClick={() => setSelectedProduct(null)}
+                style={{
+                  alignSelf: "flex-end",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "#555",
+                }}
+              >
+                ×
+              </button>
+
+              <h2
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "500",
+                  margin: "0",
+                  color: "#0F1111",
+                }}
+              >
+                {selectedProduct.name}
+              </h2>
+
+              <div
+                style={{
+                  color: "#007185",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Visit store → {/* fake link */}
+              </div>
+
+              <div
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "#B12704",
+                }}
+              >
+                ₹{selectedProduct.price.toFixed(2)}
+              </div>
+
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: selectedProduct.quantity > 0 ? "#007600" : "#c40000",
+                }}
+              >
+                {selectedProduct.quantity > 0
+                  ? `₹{selectedProduct.quantity} available`
+                  : "Currently unavailable"}
+              </div>
+
+              <p style={{ color: "#0F1111", lineHeight: "1.5" }}>
+                {selectedProduct.description}
+              </p>
+
+              {selectedProduct.quantity > 0 && (
+                <div>
+                  <label
+                    style={{
+                      fontWeight: "500",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Quantity
+                  </label>
+                  <select
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "4px",
+                      border: "1px solid #d5d9d9",
+                    }}
+                  >
+                    {[...Array(Math.min(10, selectedProduct.quantity))].map(
+                      (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+              )}
+
+              {message && (
+                <div
+                  style={{
+                    padding: "12px",
+                    background: message.includes("Added")
+                      ? "#f0fdf4"
+                      : "#fef2f2",
+                    color: message.includes("Added") ? "#166534" : "#991b1b",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                  }}
+                >
+                  {message}
+                </div>
+              )}
+
+              <button
+                onClick={handleAddToCart}
+                disabled={selectedProduct.quantity <= 0}
+                style={{
+                  background:
+                    selectedProduct.quantity > 0 ? "#FFD814" : "#cccccc",
+                  color: selectedProduct.quantity > 0 ? "#0F1111" : "#666",
+                  border: "1px solid #cdcdcd",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  fontWeight: "500",
+                  fontSize: "15px",
+                  cursor:
+                    selectedProduct.quantity > 0 ? "pointer" : "not-allowed",
+                }}
+              >
+                Add to Cart
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* Message */}
-        {message && (
-          <div style={{
-            padding: '14px',
-            borderRadius: '10px',
-            marginBottom: '20px',
-            textAlign: 'center',
-            fontWeight: '700',
-            fontSize: '14px',
-            background: message.includes('✓') ? '#d4edda' : '#f8d7da',
-            color: message.includes('✓') ? '#155724' : '#721c24'
-          }}>
-            {message}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div style={{
-          display: 'flex',
-          gap: '14px'
-        }}>
-          <Button
-            onClick={() => {
-              setSelectedProduct(null);
-              setMessage('');
-              setQuantity(1);
-            }}
-            style={{
-              flex: 1,
-              padding: '14px',
-              borderRadius: '10px',
-              border: '1px solid rgba(221, 221, 221, 1)',
-              background: '#f0f0f0',
-              fontWeight: '700',
-              cursor: 'pointer',
-              color: 'black'
-            }}
-          >
-            Close
-          </Button>
-
-          <Button
-            onClick={handleAddToCart}
-            disabled={!selectedProduct.inStock}
-            style={{
-              flex: 1,
-              padding: '5px',
-              borderRadius: '10px',
-              border: 'none',
-              background: selectedProduct.inStock ? '#FF9900' : '#ccc',
-              color: '#fff',
-              fontWeight: '800',
-              cursor: selectedProduct.inStock ? 'pointer' : 'not-allowed'
-            }}
-          >
-            Add to Cart
-          </Button>
         </div>
-      </div>
+      )}
     </div>
-  </div>
-)}
-
-    </div>
-    </>
   );
 }

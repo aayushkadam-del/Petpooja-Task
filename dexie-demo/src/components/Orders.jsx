@@ -160,7 +160,7 @@ export default function Orders() {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#B12704', marginBottom: '8px' }}>
-                        ${order.total.toFixed(2)}
+                        ₹{order.total.toFixed(2)}
                       </div>
                       <span style={{
                         padding: '6px 12px',
@@ -192,7 +192,7 @@ export default function Orders() {
                                   <p style={{ fontSize: '13px', color: '#666' }}>Qty: {item.quantity || 1}</p>
                                 </div>
                               </div>
-                              <span style={{ fontSize: '15px', fontWeight: '600', color: '#222' }}>${item.price.toFixed(2)}</span>
+                              <span style={{ fontSize: '15px', fontWeight: '600', color: '#222' }}>₹{item.price.toFixed(2)}</span>
                             </div>
                           ))}
                         </div>

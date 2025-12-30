@@ -1,18 +1,36 @@
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { LogOut, ShoppingCart, Package, MapPin, Home } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import {
+  LogOut,
+  ShoppingCart,
+  Package,
+  MapPin,
+  Box,
+  TrendingUp,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
-import Footer from "@/components/ui/footer";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
   const [index, setIndex] = useState(0);
 
   const slides = [
-    { title: 'Discover New Arrivals', subtitle: 'Hand-picked items for you', img: 'https://images.unsplash.com/photo-1542293787938-c9e299b880f2?w=1200&q=80' },
-    { title: 'Seasonal Deals', subtitle: 'Save big on favorites', img: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=1200&q=80' },
-    { title: 'Shop Best Sellers', subtitle: 'Top-rated by other shoppers', img: 'https://images.unsplash.com/photo-1526178612437-5f7b5d2d6b89?w=1200&q=80' }
+    {
+      title: "Discover New Arrivals",
+      subtitle: "Hand-picked items just for you",
+      img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+    },
+    {
+      title: "Seasonal Deals",
+      subtitle: "Save big on trending styles",
+      img: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=1600&q=80", // sneakers clean background
+    },
+    {
+      title: "Shop Best Sellers",
+      subtitle: "Top-rated by our customers",
+      img: "https://images.unsplash.com/photo-1593032465175-481ac7f401a0", // fashion street style
+    },
   ];
 
   useEffect(() => {
@@ -21,109 +39,473 @@ export default function Dashboard() {
   }, []);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('currentUser');
-    navigate('/');
+    sessionStorage.removeItem("currentUser");
+    navigate("/");
   };
 
+  const quickActions =
+    currentUser?.role === "admin"
+      ? [
+          {
+            icon: Box,
+            label: "Inventory",
+            desc: "Manage products",
+            path: "/manage-inventory",
+            color: "#FF9900",
+          },
+          {
+            icon: Package,
+            label: "Add Product",
+            desc: "Create new listing",
+            path: "/add-product",
+            color: "#146EB4",
+          },
+          {
+            icon: ShoppingCart,
+            label: "Orders",
+            desc: "View all orders",
+            path: "/manage-orders",
+            color: "#007185",
+          },
+          {
+            icon: TrendingUp,
+            label: "Analytics",
+            desc: "View insights",
+            path: "/analytics",
+            color: "#C7511F",
+          },
+        ]
+      : [
+          {
+            icon: ShoppingCart,
+            label: "Shop",
+            desc: "Browse products",
+            path: "/marketplace",
+            color: "#FF9900",
+          },
+          {
+            icon: Package,
+            label: "My Cart",
+            desc: "Review items",
+            path: "/cart",
+            color: "#146EB4",
+          },
+          {
+            icon: MapPin,
+            label: "Orders",
+            desc: "Track shipments",
+            path: "/orders",
+            color: "#007185",
+          },
+        ];
+
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#f7f7fb 0%, #ffffff 100%)', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ background: 'linear-gradient(90deg,#0f172a,#0b1220)', color: 'white', padding: '14px 20px', position: 'sticky', top: 0, zIndex: 60 }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Home size={26} style={{ color: '#FFA500' }} />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#EAEDED",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Amazon-style Header */}
+      <header style={{ background: "#131921", padding: "12px 24px" }}>
+        <div
+          style={{
+            maxWidth: "1500px",
+            margin: "0 auto",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 4,
+                background: "#FF9900",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#131921",
+                fontWeight: 700,
+                fontSize: 18,
+              }}
+            >
+              {currentUser?.name?.charAt(0) || "S"}
+            </div>
             <div>
-              <div style={{ fontSize: '14px', color: '#ddd' }}>Hello,</div>
-              <div style={{ fontSize: '18px', fontWeight: 700 }}>{currentUser?.name || 'Shopper'}</div>
+              <div style={{ fontSize: 12, color: "#ccc" }}>
+                Hello, {currentUser?.name?.split(" ")[0] || "Shopper"}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                Account & Lists
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button onClick={() => navigate('/marketplace')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '8px 14px', borderRadius: 8, cursor: 'pointer' }}>Marketplace</button>
-            <button onClick={handleLogout} style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#FFA500', color: '#0b1220', border: 'none', padding: '10px 16px', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}><LogOut size={16}/>Logout</button>
-          </div>
+          <button
+            onClick={handleLogout}
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              background: "#FF9900",
+              color: "#131921",
+              border: "none",
+              padding: "10px 20px",
+              borderRadius: 4,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontSize: 13,
+              transition: "all 0.2s",
+            }}
+          >
+            <LogOut size={16} />
+            Sign Out
+          </button>
         </div>
       </header>
 
-      <main style={{ width: '100%', maxWidth: 1400, margin: '28px auto', padding: '0 20px', flex: 1 }}>
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }}>
-          {/* Carousel / Hero */}
-          <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 10px 30px rgba(13, 30, 91, 0.08)' }}>
-            {slides.map((s, i) => (
-              <div key={i} style={{ backgroundImage: `url(${s.img})`, backgroundSize: 'cover', backgroundPosition: 'center', height: 360, transition: 'opacity 600ms ease', opacity: i === index ? 1 : 0, position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end' }}>
-                <div style={{ width: '100%', padding: '24px', background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 60%)', color: 'white' }}>
-                  <h3 style={{ fontSize: 22, margin: 0 }}>{s.title}</h3>
-                  <p style={{ marginTop: 6 }}>{s.subtitle}</p>
+      {/* Secondary Header */}
+      {/* <div style={{ background: "#232F3E", padding: "8px 24px", borderBottom: "1px solid #3a4553" }}>
+        <div style={{ maxWidth: "1500px", margin: "0 auto", display: "flex", gap: "20px", alignItems: "center" }}>
+          <div style={{ color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>All</div>
+          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Today's Deals</div>
+          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Customer Service</div>
+          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Registry</div>
+          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Gift Cards</div>
+          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Sell</div>
+        </div>
+      </div> */}
+
+      <main
+        style={{
+          width: "100%",
+          maxWidth: 1500,
+          margin: "0 auto",
+          padding: "20px 24px",
+          flex: 1,
+        }}
+      >
+        {/* Hero Carousel */}
+        <div
+          style={{
+            position: "relative",
+            borderRadius: 0,
+            overflow: "hidden",
+            height: 400,
+            marginBottom: 20,
+          }}
+        >
+          {slides.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.3)), url(₹{s.img})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                height: "100%",
+                transition: "opacity 600ms ease",
+                opacity: i === index ? 1 : 0,
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <h1
+                style={{
+                  fontSize: 42,
+                  margin: 0,
+                  color: "white",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  textShadow: "0 2px 4px rgba(0,0,0,0.4)",
+                }}
+              >
+                {s.title}
+              </h1>
+              <p
+                style={{
+                  marginTop: 10,
+                  fontSize: 18,
+                  color: "rgba(255,255,255,0.95)",
+                  textAlign: "center",
+                }}
+              >
+                {s.subtitle}
+              </p>
+            </div>
+          ))}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              bottom: 20,
+              display: "flex",
+              gap: 8,
+            }}
+          >
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIndex(i)}
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 10,
+                  background: i === index ? "#FF9900" : "rgba(255,255,255,0.6)",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.3s",
+                }}
+                aria-label={`Go to slide ₹{i+1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Main Navigation Card - Amazon Style */}
+        <div style={{ background: "white", padding: 30, marginBottom: 20 }}>
+          <div style={{ marginBottom: 24 }}>
+            <h2
+              style={{
+                fontSize: 21,
+                fontWeight: 700,
+                color: "#0F1111",
+                margin: 0,
+              }}
+            >
+              Your quick actions
+            </h2>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(₹{quickActions.length}, 1fr)`,
+              gap: 16,
+            }}
+          >
+            {quickActions.map((action, idx) => (
+              <div
+                key={idx}
+                onClick={() => navigate(action.path)}
+                style={{
+                  padding: 20,
+                  background: "#fff",
+                  border: "1px solid #D5D9D9",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  textAlign: "center",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+                  e.currentTarget.style.borderColor = "#C7C7C7";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderColor = "#D5D9D9";
+                }}
+              >
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 8,
+                    background: `₹{action.color}15`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 16px",
+                  }}
+                >
+                  <action.icon size={30} style={{ color: action.color }} />
+                </div>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: "#0F1111",
+                    marginBottom: 4,
+                  }}
+                >
+                  {action.label}
+                </div>
+                <div style={{ fontSize: 12, color: "#565959" }}>
+                  {action.desc}
                 </div>
               </div>
             ))}
-            <div style={{ position: 'absolute', left: 16, bottom: 16, display: 'flex', gap: 8 }}>
-              {slides.map((_, i) => (
-                <button key={i} onClick={() => setIndex(i)} style={{ width: 10, height: 10, borderRadius: 10, background: i === index ? '#FFA500' : 'rgba(255,255,255,0.6)', border: 'none', cursor: 'pointer' }} aria-label={`Go to slide ${i+1}`} />
-              ))}
+          </div>
+        </div>
+
+        {/* Account Info - Amazon Style */}
+        <div
+          style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 24,
+              border: "1px solid #D5D9D9",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#0F1111",
+                margin: "0 0 20px 0",
+                paddingBottom: 12,
+                borderBottom: "1px solid #e7e7e7",
+              }}
+            >
+              Account Details
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 20,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#565959",
+                    marginBottom: 6,
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Email Address
+                </div>
+                <div
+                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
+                >
+                  {currentUser?.email || "—"}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#565959",
+                    marginBottom: 6,
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Phone Number
+                </div>
+                <div
+                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
+                >
+                  {currentUser?.phone || "—"}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#565959",
+                    marginBottom: 6,
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Customer Since
+                </div>
+                <div
+                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
+                >
+                  {currentUser?.createdAt
+                    ? new Date(currentUser.createdAt).toLocaleDateString()
+                    : "—"}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#565959",
+                    marginBottom: 6,
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Account Type
+                </div>
+                <div
+                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
+                >
+                  {currentUser?.role === "admin" ? (
+                    <span
+                      style={{
+                        background: "#146EB4",
+                        color: "white",
+                        padding: "3px 10px",
+                        borderRadius: 2,
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      ADMIN
+                    </span>
+                  ) : (
+                    "Prime Member"
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Quick Account Card */}
-          <Card style={{ padding: 20, borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 12, color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Account</div>
-                <div style={{ fontSize: 18, marginTop: 6, fontWeight: 700 }}>{currentUser?.name || 'Shopper'}</div>
-                <div style={{ color: '#6b7280', fontSize: 13, marginTop: 6 }}>{currentUser?.email || 'No email set'}</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button onClick={() => navigate('/user-products')} style={{ background: '#0f172a', color: 'white', borderRadius: 8, padding: '8px 12px', border: 'none', cursor: 'pointer' }}>My Products</button>
-                <button onClick={() => navigate('/orders')} style={{ background: '#fff', color: '#0f172a', border: '1px solid #e6edf3', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}>Orders</button>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
-              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: '#6b7280' }}>Phone</div>
-                <div style={{ fontWeight: 700 }}>{currentUser?.phone || '—'}</div>
-              </div>
-              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: '#6b7280' }}>Joined</div>
-                <div style={{ fontWeight: 700 }}>{currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : '—'}</div>
-              </div>
-            </div>
-          </Card>
-        </section>
-
-        {/* Navigation / Actions */}
-        <section style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 18 }}>
-          <Card onClick={() => navigate('/marketplace')} style={{ padding: 20, cursor: 'pointer', borderRadius: 12 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ background: '#FFF4E5', padding: 12, borderRadius: 10 }}><ShoppingCart size={28} style={{ color: '#FF9900' }} /></div>
-              <div>
-                <div style={{ fontWeight: 700 }}>Shop Products</div>
-                <div style={{ color: '#6b7280', fontSize: 13 }}>Browse curated catalog</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card onClick={() => navigate('/cart')} style={{ padding: 20, cursor: 'pointer', borderRadius: 12 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ background: '#E8F3FF', padding: 12, borderRadius: 10 }}><Package size={28} style={{ color: '#0077c8' }} /></div>
-              <div>
-                <div style={{ fontWeight: 700 }}>My Cart</div>
-                <div style={{ color: '#6b7280', fontSize: 13 }}>Review and checkout</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card onClick={() => navigate('/orders')} style={{ padding: 20, cursor: 'pointer', borderRadius: 12 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ background: '#EFF9F0', padding: 12, borderRadius: 10 }}><MapPin size={28} style={{ color: '#16a34a' }} /></div>
-              <div>
-                <div style={{ fontWeight: 700 }}>Orders</div>
-                <div style={{ color: '#6b7280', fontSize: 13 }}>Track shipments</div>
-              </div>
-            </div>
-          </Card>
-        </section>
+          <div style={{ background: "#146EB4", padding: 24, color: "white" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 12px 0" }}>
+              Welcome back
+            </h3>
+            <p
+              style={{
+                fontSize: 13,
+                opacity: 0.95,
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              {currentUser?.role === "admin"
+                ? "Manage your inventory and fulfill orders efficiently."
+                : "Continue shopping where you left off and discover new deals."}
+            </p>
+          </div>
+        </div>
       </main>
 
-      <Footer />
+      {/* Footer */}
+      <footer
+        style={{
+          background: "#232F3E",
+          color: "#fff",
+          padding: "40px 24px",
+          marginTop: 40,
+        }}
+      >
+        <div style={{ maxWidth: 1500, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontSize: 13, color: "#DDD" }}>
+            © 2024 Your Store. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
