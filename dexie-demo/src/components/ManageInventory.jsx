@@ -11,6 +11,8 @@ import {
   Home,
   Save,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import db from "../db/db";
 import { Card } from "@/components/ui/card";
@@ -26,6 +28,8 @@ export default function ManageInventory() {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [viewMode, setViewMode] = useState("table");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== "admin") {
@@ -109,7 +113,7 @@ export default function ManageInventory() {
   };
 
   const handleDeleteProduct = async (productId, productName) => {
-    if (!window.confirm(`Are you sure you want to delete "{productName}"?`))
+    if (!window.confirm(`Are you sure you want to delete "${productName}"?`))
       return;
     try {
       await db.products.delete(productId);
@@ -122,10 +126,21 @@ export default function ManageInventory() {
     }
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, viewMode]);
+
   const filteredProducts = products.filter(
     (p) =>
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
   );
 
   const handleLogout = () => {
@@ -394,7 +409,7 @@ export default function ManageInventory() {
               gap: 20,
             }}
           >
-            {filteredProducts.map((product) => (
+            {paginatedProducts.map((product) => (
               <Card
                 key={product.id}
                 style={{
@@ -787,7 +802,7 @@ export default function ManageInventory() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <tr
                     key={product.id}
                     style={{ borderBottom: "1px solid #f1f5f9" }}
@@ -1017,6 +1032,112 @@ export default function ManageInventory() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {filteredProducts.length > ITEMS_PER_PAGE && (
+          <div
+            style={{
+              marginTop: "32px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "8px 16px",
+                background: "white",
+                border: "1px solid #d5d9d9",
+                borderRadius: "8px",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                opacity: currentPage === 1 ? 0.5 : 1,
+                color: "#0f1111",
+                fontSize: "14px",
+                fontWeight: 500,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              }}
+            >
+              <ChevronLeft size={16} /> Previous
+            </button>
+
+            <div style={{ display: "flex", gap: "8px" }}>
+              {[...Array(totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                // Show only a few page numbers around the current page if there are many pages
+                if (
+                  totalPages > 7 &&
+                  pageNum !== 1 &&
+                  pageNum !== totalPages &&
+                  Math.abs(pageNum - currentPage) > 2
+                ) {
+                  if (Math.abs(pageNum - currentPage) === 3) {
+                    return (
+                      <span key={pageNum} style={{ color: "#565959" }}>
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: currentPage === pageNum ? "#FFA500" : "white",
+                      color: currentPage === pageNum ? "black" : "#0f1111",
+                      border: "1px solid",
+                      borderColor:
+                        currentPage === pageNum ? "#FFA500" : "#d5d9d9",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: currentPage === pageNum ? 700 : 500,
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "8px 16px",
+                background: "white",
+                border: "1px solid #d5d9d9",
+                borderRadius: "8px",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                opacity: currentPage === totalPages ? 0.5 : 1,
+                color: "#0f1111",
+                fontSize: "14px",
+                fontWeight: 500,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              }}
+            >
+              Next <ChevronRight size={16} />
+            </button>
           </div>
         )}
       </main>

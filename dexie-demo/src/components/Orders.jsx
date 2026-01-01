@@ -51,24 +51,28 @@ export default function Orders() {
             <Home size={24} style={{ color: '#FF9900', cursor: 'pointer' }} onClick={() => navigate('/dashboard')} />
             <h1 style={{ fontSize: '20px', fontWeight: 'bold' }}>My Orders</h1>
           </div>
-          <Button
-            onClick={() => navigate('/marketplace')}
-            style={{
-              padding: '8px 16px',
-              background: '#FF9900',
-              color: 'white',
-              border: 'none',
-             
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.background = '#FF9900'}
-            onMouseLeave={(e) => e.target.style.background = '#FF9900'}
-          >
-            Continue Shopping
-          </Button>
+   <Button
+  onClick={() => navigate('/marketplace')}
+  style={{
+    padding: '8px 16px',
+    background: '#FF9900',
+    color: 'black',
+    border: 'none',
+    fontWeight: '600',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'transform 0.15s ease'
+  }}
+  onMouseEnter={(e) =>
+    (e.currentTarget.style.transform = 'translateY(2px)')
+  }
+  onMouseLeave={(e) =>
+    (e.currentTarget.style.transform = 'translateY(0)')
+  }
+>
+  Continue Shopping
+</Button>
+
         </div>
       </header>
 
@@ -155,7 +159,10 @@ export default function Orders() {
                         Order #{order.id}
                       </h3>
                       <p style={{ color: '#666', fontSize: '13px' }}>
-                        {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} • {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+                        {(() => {
+                          const totalQty = order.items.reduce((sum, it) => sum + (it.quantity || 1), 0);
+                          return `${new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} • ${totalQty} ${totalQty === 1 ? 'item' : 'items'}`;
+                        })()}
                       </p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -224,7 +231,7 @@ export default function Orders() {
                 style={{
                   padding: '12px 32px',
                   background: '#FF9900',
-                  color: 'white',
+                  color: 'black',
                   border: 'none',
                   borderRadius: '4px',
                   fontWeight: '600',

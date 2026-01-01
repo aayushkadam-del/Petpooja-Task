@@ -1,5 +1,5 @@
 // src/pages/OrderDetail.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,8 +13,12 @@ import {
   User,
   CreditCard,
   ShoppingBag,
+  FileText,
+  Download,
+  X,
 } from "lucide-react";
 import db from "../db/db";
+import html2pdf from "html2pdf.js";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +35,23 @@ export default function OrderDetail() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const invoiceRef = useRef(null);
+
+  const handleDownloadPDF = () => {
+    const element = invoiceRef.current;
+    if (!element) return;
+
+    const opt = {
+      margin: 10,
+      filename: `invoice_${order.id}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    };
+
+    html2pdf().set(opt).from(element).save();
+  };
 
   useEffect(() => {
     const currentUser = JSON.parse(
@@ -79,54 +100,54 @@ export default function OrderDetail() {
     });
   };
 
-const getStatusConfig = (status = "pending") => {
-  const map = {
-    pending: {
-      label: "Pending",
-      bg: "bg-amber-50",
-      text: "text-amber-800",
-      border: "border-amber-200",
-      icon: Clock,
-    },
-    confirmed: {
-      label: "Confirmed",
-      bg: "bg-emerald-50",
-      text: "text-emerald-800",
-      border: "border-emerald-200",
-      icon: CheckCircle,
-    },
-    processing: {
-      label: "Processing",
-      bg: "bg-gray-50",
-      text: "text-gray-800",
-      border: "border-gray-300",
-      icon: RefreshCw,
-    },
-    shipped: {
-      label: "Shipped",
-      bg: "bg-slate-50",
-      text: "text-slate-800",
-      border: "border-slate-300",
-      icon: Truck,
-    },
-    delivered: {
-      label: "Delivered",
-      bg: "bg-green-50",
-      text: "text-green-800",
-      border: "border-green-200",
-      icon: Package,
-    },
-    cancelled: {
-      label: "Cancelled",
-      bg: "bg-red-50",
-      text: "text-red-800",
-      border: "border-red-200",
-      icon: AlertCircle,
-    },
-  };
+  const getStatusConfig = (status = "pending") => {
+    const map = {
+      pending: {
+        label: "Pending",
+        bg: "bg-amber-50",
+        text: "text-amber-800",
+        border: "border-amber-200",
+        icon: Clock,
+      },
+      confirmed: {
+        label: "Confirmed",
+        bg: "bg-emerald-50",
+        text: "text-emerald-800",
+        border: "border-emerald-200",
+        icon: CheckCircle,
+      },
+      processing: {
+        label: "Processing",
+        bg: "bg-gray-50",
+        text: "text-gray-800",
+        border: "border-gray-300",
+        icon: RefreshCw,
+      },
+      shipped: {
+        label: "Shipped",
+        bg: "bg-slate-50",
+        text: "text-slate-800",
+        border: "border-slate-300",
+        icon: Truck,
+      },
+      delivered: {
+        label: "Delivered",
+        bg: "bg-green-50",
+        text: "text-green-800",
+        border: "border-green-200",
+        icon: Package,
+      },
+      cancelled: {
+        label: "Cancelled",
+        bg: "bg-red-50",
+        text: "text-red-800",
+        border: "border-red-200",
+        icon: AlertCircle,
+      },
+    };
 
-  return map[status.toLowerCase()] || map.pending;
-};
+    return map[status.toLowerCase()] || map.pending;
+  };
 
   if (loading) {
     return (
@@ -187,7 +208,7 @@ const getStatusConfig = (status = "pending") => {
             >
               <ArrowLeft className="h-6 w-6" />
             </Button>
-            <div>
+            <div className="flex-1">
               <h3 className="text-xl sm:text-2xl font-bold">
                 Order #{order.id}
               </h3>
@@ -195,6 +216,13 @@ const getStatusConfig = (status = "pending") => {
                 {formatDate(order.createdAt)}
               </p>
             </div>
+            <Button
+              className="bg-[#FF9900] hover:bg-[#FFB84D] text-black font-medium gap-2"
+              onClick={() => setShowInvoice(true)}
+            >
+              <FileText className="h-4 w-4" />
+              View Invoice
+            </Button>
           </div>
         </div>
       </header>
@@ -204,7 +232,10 @@ const getStatusConfig = (status = "pending") => {
           {/* Left column - main content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Status & date */}
-            <Card className="border-gray-200 shadow-sm" style={{ padding: "10px", marginTop: "10px", marginLeft: "10px" }}>
+            <Card
+              className="border-gray-200 shadow-sm"
+              style={{ padding: "10px", marginTop: "10px", marginLeft: "10px" }}
+            >
               <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -232,13 +263,12 @@ const getStatusConfig = (status = "pending") => {
             {/* Order Items */}
             <Card
               className="border-gray-200 shadow-sm overflow-hidden"
-              style={{ padding: "10px" , marginTop: "10px" ,marginLeft: "10px"}}
-
+              style={{ padding: "10px", marginTop: "10px", marginLeft: "10px" }}
             >
               <CardHeader className="bg-gray-50 border-b px-6 py-4">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
                   <ShoppingBag className="h-5 w-5 text-gray-700" />
-                  Order Items ({order.items?.length || 0})
+                  Order Items ({order.items?.reduce((sum, it) => sum + (it.quantity || 1), 0) || 0})
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -334,7 +364,7 @@ const getStatusConfig = (status = "pending") => {
             {/* Payment & Status quick view */}
             <Card
               className="border-gray-200 shadow-sm"
-              style={{ padding: "10px" ,marginTop:'10px'}}
+              style={{ padding: "10px", marginTop: "10px" }}
             >
               <CardHeader className="bg-gray-50 border-b px-6 py-4">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -416,7 +446,10 @@ const getStatusConfig = (status = "pending") => {
                   Customer
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 text-sm space-y-2 text-gray-700" style={{ marginbottom: "0px" }}>
+              <CardContent
+                className="p-6 text-sm space-y-2 text-gray-700"
+                style={{ marginbottom: "0px" }}
+              >
                 {user ? (
                   <>
                     <p className="font-semibold text-gray-900">
@@ -433,6 +466,176 @@ const getStatusConfig = (status = "pending") => {
           </div>
         </div>
       </main>
+{showInvoice && (
+  <div className="fixed inset-0 z-50 bg-white overflow-auto">
+    {/* Minimal top bar */}
+    <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 print:hidden">
+      <div className="max-w-7xl mx-auto flex justify-end gap-4">
+        <button
+          onClick={handleDownloadPDF}
+          className="px-4 py-2 text-sm border border-gray-300 hover:bg-gray-50 rounded"
+        >
+          Save as PDF
+        </button>
+        <button
+          onClick={() => setShowInvoice(false)}
+          className="px-4 py-2 text-sm border border-gray-300 hover:bg-gray-50 rounded"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+
+    <div className="p-6 md:p-8 lg:p-12 print:p-8 print:max-w-[260mm] print:mx-auto">
+      <div
+        ref={invoiceRef}
+        className="bg-white text-black max-w-7xl mx-auto print:max-w-[260mm] print:shadow-none"
+      >
+        {/* Header */}
+        <div className="pb-12 border-b border-gray-200">
+          <div className="flex justify-between items-start">
+            <div>
+              <h4 className="text-2xl tracking-tight">INVOICE</h4>
+              <div className="mt-4 space-y-1.5 text-sm text-gray-600">
+                <p>
+                  <span className="inline-block w-28">Number</span>
+                  <span>INV-{order.id}-{new Date().getFullYear()}</span>
+                </p>
+                <p>
+                  <span className="inline-block w-28">Date</span>
+                  <span>{formatDate(order.createdAt)}</span>
+                </p>
+                <p>
+                  <span className="inline-block w-28">Status</span>
+                  <span>Paid</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-2xl tracking-tight">Dexie Demo</div>
+              <div className="mt-3 text-sm text-gray-600 leading-relaxed">
+                <p>123 Business Avenue, Suite 500</p>
+                <p>Corporate Park, Mumbai 400001</p>
+                <p>support@dexiedemo.com</p>
+                <p>+91 22 4567 8900</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bill to & Ship to */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 py-12 border-b border-gray-200">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-gray-500 mb-4">Billed To</div>
+            {user ? (
+              <div className="text-base space-y-1.5">
+                <div>{user.name || "Guest Customer"}</div>
+                <div>{user.email || "—"}</div>
+                {user.phone && <div>Phone: {user.phone}</div>}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600">Anonymous Customer</div>
+            )}
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-wider text-gray-500 mb-4">Shipping To</div>
+            {order.shippingAddress ? (
+              <div className="text-base space-y-1.5">
+                <div>
+                  {order.shippingAddress.firstName} {order.shippingAddress.lastName}
+                </div>
+                <div>{order.shippingAddress.address}</div>
+                <div>
+                  {order.shippingAddress.city}, {order.shippingAddress.state || ""}{" "}
+                  {order.shippingAddress.postalCode}
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600">Standard Shipping</div>
+            )}
+          </div>
+        </div>
+
+        {/* Items table – bolder items + more spacing */}
+        <div className="py-16">
+          <table className="w-full text-sm table-fixed">
+            <thead>
+              <tr className="border-b border-gray-300 text-gray-600">
+                <th className="pb-5 text-left font-normal w-5/12 lg:w-[55%]">Description</th>
+                <th className="pb-5 text-right font-normal w-2/12">Rate</th>
+                <th className="pb-5 text-center font-normal w-1/12">Qty</th>
+                <th className="pb-5 text-right font-normal w-2/12">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-300">
+              {order.items?.map((item, idx) => (
+                <tr key={idx}>
+                  <td className="py-6 pr-8">
+                    <div className="font-semibold text-gray-900">
+                      {item.name || item.title || "Product Item"}
+                    </div>
+                    {item.variant && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        Variant: {item.variant}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-6 text-right">
+                    ₹{(item.price || 0).toFixed(2)}
+                  </td>
+                  <td className="py-6 text-center">{item.quantity || 1}</td>
+                  <td className="py-6 text-right">
+                    ₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Totals */}
+        <div className="flex justify-end py-10 border-t border-gray-300">
+          <div className="w-full max-w-md lg:max-w-xl space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal</span>
+              <span>₹{(order.subtotal || order.total || 0).toFixed(2)}</span>
+            </div>
+
+            {order.shippingFee !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Shipping</span>
+                <span>₹{order.shippingFee.toFixed(2)}</span>
+              </div>
+            )}
+
+            {order.discount > 0 && (
+              <div className="flex justify-between text-gray-600">
+                <span>Discount</span>
+                <span>-₹{order.discount.toFixed(2)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-5 border-t border-gray-400 text-base">
+              <span>Total</span>
+              <span className="font-normal">₹{order.total?.toFixed(2) || "0.00"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="pt-20 text-center text-xs text-gray-500">
+          <p>Payment processed securely. Transaction ID: TXN-{order.id}</p>
+          <p className="mt-6">
+            This is a computer generated invoice and does not require a signature.
+          </p>
+          <p className="mt-2">© {new Date().getFullYear()} Dexie Demo Store</p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

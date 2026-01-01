@@ -6,9 +6,163 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 import db from "../db/db";
 import { Card } from "./ui/card";
+
+const PRODUCT_TEMPLATES = [
+  {
+    id: "tp1",
+    name: "Apple iPhone 15 Pro",
+    price: "129900",
+    description:
+      "Latest Apple iPhone with Titanium design, A17 Pro chip, and advanced camera system.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/81Sig6biNGL._AC_SL1500_.jpg",
+    discountPercentage: "5",
+  },
+  {
+    id: "tp2",
+    name: "Samsung Galaxy S24 Ultra",
+    price: "109999",
+    description:
+      "Premium Android smartphone with Galaxy AI, 200MP camera, and S Pen.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/71RVuS3q9QL._AC_SL1500_.jpg",
+    discountPercentage: "10",
+  },
+  {
+    id: "tp3",
+    name: "MacBook Air M2",
+    price: "99900",
+    description:
+      "Supercharged by M2, 13.6-inch Liquid Retina Display, 8GB RAM, 256GB SSD.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/71f5Eu5lJSL._AC_SL1500_.jpg",
+    discountPercentage: "12",
+  },
+  {
+    id: "tp4",
+    name: "Sony WH-1000XM5",
+    price: "29900",
+    description:
+      "Industry leading noise canceling headphones with Auto NC Optimizer.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/51aBtkSTh7L._AC_SL1000_.jpg",
+    discountPercentage: "15",
+  },
+  {
+    id: "tp5",
+    name: "Nike Air Jordan 1",
+    price: "14995",
+    description:
+      "Iconic basketball shoes with premium leather and classic silhouette.",
+    category: "Clothing",
+    image: "https://m.media-amazon.com/images/I/6125yAfsJKL._AC_UX679_.jpg",
+    discountPercentage: "0",
+  },
+  {
+    id: "tp6",
+    name: "Logitech MX Master 3S",
+    price: "10995",
+    description:
+      "Performance wireless mouse with ultrafast scrolling and 8K DPI tracking.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/61ni3t1ryQL._AC_SL1500_.jpg",
+    discountPercentage: "8",
+  },
+  {
+    id: "tp7",
+    name: "Dell XPS 15",
+    price: "154990",
+    description:
+      "Powerful laptop with 15.6-inch OLED display, i9 processor, and NVIDIA RTX graphics.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/81-nE8tPj0L._AC_SL1500_.jpg",
+    discountPercentage: "5",
+  },
+  {
+    id: "tp8",
+    name: "Bose QuietComfort Ultra",
+    price: "35900",
+    description:
+      "Immersive audio headphones with world-class noise cancellation and spatial audio.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/51XvC3mEOfL._AC_SL1500_.jpg",
+    discountPercentage: "10",
+  },
+  {
+    id: "tp9",
+    name: "Apple Watch Series 9",
+    price: "41900",
+    description:
+      "Smarter, brighter, and more powerful with advanced health and fitness tracking.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/71YdbLh2p1L._AC_SL1500_.jpg",
+    discountPercentage: "7",
+  },
+  {
+    id: "tp10",
+    name: "Kindle Paperwhite (16 GB)",
+    price: "14999",
+    description:
+      "6.8-inch display, adjustable warm light, and up to 10 weeks of battery life.",
+    category: "Books",
+    image: "https://m.media-amazon.com/images/I/51fIe6YyvXL._AC_SL1000_.jpg",
+    discountPercentage: "15",
+  },
+  {
+    id: "tp11",
+    name: "iPad Pro 12.9-inch (M2)",
+    price: "112900",
+    description:
+      "Brilliant Liquid Retina XDR display, M2 chip, and Apple Pencil Hover support.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/81c+9BOQNWL._AC_SL1500_.jpg",
+    discountPercentage: "5",
+  },
+  {
+    id: "tp12",
+    name: "Canon EOS R5",
+    price: "329995",
+    description:
+      "Professional full-frame mirrorless camera with 45MP sensor and 8K video.",
+    category: "Electronics",
+    image: "https://m.media-amazon.com/images/I/81F-7mJ6VWL._AC_SL1500_.jpg",
+    discountPercentage: "0",
+  },
+  {
+    id: "tp13",
+    name: "Instant Pot Duo 7-in-1",
+    price: "9990",
+    description:
+      "Electric pressure cooker, slow cooker, rice cooker, and more in one appliance.",
+    category: "Home & Garden",
+    image: "https://m.media-amazon.com/images/I/61S8n6xKFIL._AC_SL1500_.jpg",
+    discountPercentage: "20",
+  },
+  {
+    id: "tp14",
+    name: "Nintendo Switch OLED",
+    price: "32900",
+    description:
+      "Handheld gaming console with 7-inch OLED screen and enhanced audio.",
+    category: "Toys",
+    image: "https://m.media-amazon.com/images/I/61m9R6V-U0L._AC_SL1500_.jpg",
+    discountPercentage: "5",
+  },
+  {
+    id: "tp15",
+    name: "Levi's 501 Original Fit Jeans",
+    price: "3499",
+    description:
+      "Classic straight-leg jeans with button fly and timeless style.",
+    category: "Clothing",
+    image: "https://m.media-amazon.com/images/I/81+m0Q6Bv8L._AC_UX679_.jpg",
+    discountPercentage: "30",
+  },
+];
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -29,6 +183,63 @@ const AddProduct = () => {
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [pendingProducts, setPendingProducts] = useState([]);
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: "6px",
+    fontWeight: "500",
+    color: "#0F1111",
+    fontSize: "14px",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1px solid #d5d9d9",
+    borderRadius: "4px",
+    fontSize: "14px",
+    background: "white",
+    boxSizing: "border-box",
+  };
+
+  const errorStyle = {
+    color: "#c40000",
+    fontSize: "13px",
+    marginTop: "4px",
+  };
+
+  const currencySymbolStyle = {
+    position: "absolute",
+    left: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#565959",
+    fontSize: "14px",
+  };
+
+  const filteredTemplates = PRODUCT_TEMPLATES.filter(
+    (t) =>
+      t.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+      t.category.toLowerCase().includes(catalogSearch.toLowerCase())
+  );
+
+  const handleTemplateSelect = (template) => {
+    console.log(template, "selected template ");
+    setFormData((prev) => ({
+      ...prev,
+      name: template.name,
+      price: template.price,
+      description: template.description,
+      category: template.category,
+      image: template.image,
+      discountPercentage: template.discountPercentage,
+    }));
+    // Clear errors for auto-filled fields
+    setErrors({});
+    setTouched({});
+  };
 
   // Redirect if not logged in or not admin
   if (!currentUser?.id || currentUser.role !== "admin") {
@@ -47,13 +258,13 @@ const AddProduct = () => {
         break;
       case "price":
         if (!value) error = "Price is required";
-        else if (!/^\d+(\.\d{1,2})?₹/.test(value))
+        else if (!/^\d+(\.\d{1,2})?$/.test(value))
           error = "Enter valid price (e.g. 99.99)";
         else if (parseFloat(value) <= 0) error = "Price must be greater than 0";
         break;
       case "quantity":
         if (!value) error = "Quantity is required";
-        else if (!/^\d+₹/.test(value)) error = "Must be a whole number";
+        else if (!/^\d+$/.test(value)) error = "Must be a whole number";
         else if (parseInt(value) < 0) error = "Quantity cannot be negative";
         break;
       case "description":
@@ -95,55 +306,76 @@ const AddProduct = () => {
     validate(name, formData[name]);
   };
 
-  const handleSubmit = async (e) => {
+  const addToQueue = (e) => {
     e.preventDefault();
 
-    // Mark all fields as touched to show errors
-    setTouched({
-      name: true,
-      price: true,
-      quantity: true,
-      description: true,
-      image: true,
-      country: true,
-      discountPercentage: true, // ← added
-    });
+    // Mark all fields as touched
+    const allTouched = {};
+    const fields = ["name", "price", "quantity", "description", "country", "discountPercentage"];
+    fields.forEach(f => allTouched[f] = true);
+    setTouched(allTouched);
 
-    // Validate all
-    const fields = [
-      "name",
-      "price",
-      "quantity",
-      "description",
-      "country",
-      "discountPercentage",
-    ]; // ← added
     const isValid = fields.every((field) => validate(field, formData[field]));
-
     if (!isValid) return;
 
+    const newProduct = {
+      ...formData,
+      id: Date.now(), // temporary ID for the list
+      userId: currentUser.id,
+      price: parseFloat(formData.price),
+      quantity: parseInt(formData.quantity),
+      discountPercentage: parseFloat(formData.discountPercentage) || 0,
+    };
+
+    setPendingProducts(prev => [...prev, newProduct]);
+    
+    // Reset form for next product
+    setFormData({
+      name: "",
+      price: "",
+      description: "",
+      category: "Electronics",
+      country: "India",
+      quantity: "",
+      image: "",
+      discountPercentage: "0",
+    });
+    setTouched({});
+    setErrors({});
+  };
+
+  const removeFromQueue = (id) => {
+    setPendingProducts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleFinalSubmit = async () => {
+    if (pendingProducts.length === 0) return;
     setLoading(true);
 
     try {
-      await db.products.add({
-        userId: currentUser.id,
-        name: formData.name.trim(),
-        price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity),
-        description: formData.description.trim(),
-        category: formData.category,
-        country: formData.country,
-        image: formData.image.trim() || null,
-        discountPercentage: parseFloat(formData.discountPercentage) || 0, // ← added
+      const productsToSave = pendingProducts.map(p => ({
+        userId: p.userId,
+        name: p.name.trim(),
+        price: p.price,
+        quantity: p.quantity,
+        description: p.description.trim(),
+        category: p.category,
+        country: p.country,
+        image: p.image.trim() || null,
+        discountPercentage: p.discountPercentage,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      }));
+
+      // Bulk add to Dexie
+      await db.products.bulkAdd(productsToSave);
 
       setSuccess(true);
-      setTimeout(() => navigate("/manage-inventory"), 1800); // adjust route if needed
+      setPendingProducts([]);
+      setTimeout(() => navigate("/manage-inventory"), 1800);
     } catch (err) {
       console.error(err);
-      setErrors({ submit: "Failed to add product. Please try again." });
+      setErrors({ submit: "Failed to add products. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -151,6 +383,15 @@ const AddProduct = () => {
 
   return (
     <>
+      <style>
+        {`
+          input:focus, select:focus, textarea:focus {
+            outline: none !important;
+            border-color: #e77600 !important;
+            box-shadow: 0 0 3px 2px rgba(228, 121, 17, 0.5) !important;
+          }
+        `}
+      </style>
       <Card>
         <div
           style={{
@@ -170,6 +411,7 @@ const AddProduct = () => {
               alignItems: "center",
               position: "sticky",
               top: 0,
+              width: "100%",
               zIndex: 100,
             }}
           >
@@ -220,503 +462,204 @@ const AddProduct = () => {
           {/* Main content */}
           <main
             style={{
-              maxWidth: "720px",
-              margin: "40px auto",
-              padding: "0 20px",
+              display: "flex",
+              height: "calc(100vh - 56px)", // Full height minus header
+              overflow: "hidden",
+              background: "#fff",
             }}
           >
+            {/* Left Side: Catalog Selection */}
             <div
               style={{
-                background: "white",
-                border: "1px solid #d5d9d9",
-                borderRadius: "8px",
-                padding: "32px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                width: "25%",
+                borderRight: "1px solid #d5d9d9",
+                display: "flex",
+                flexDirection: "column",
+                background: "#f7f7f7",
               }}
             >
-              <h1
-                style={{
-                  margin: "0 0 8px 0",
-                  fontSize: "24px",
-                  color: "#0F1111",
-                }}
-              >
-                Add a new product
-              </h1>
-              <p
-                style={{
-                  margin: "0 0 32px 0",
-                  color: "#565959",
-                  fontSize: "14px",
-                }}
-              >
-                Fill in the details below to list your product.
-              </p>
-
-              {success && (
-                <div
-                  style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: "6px",
-                    padding: "16px",
-                    marginBottom: "24px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
-                  <CheckCircle size={20} color="#15803d" />
-                  <div>
-                    <strong>Success!</strong> Product added. Redirecting...
-                  </div>
-                </div>
-              )}
-
-              {errors.submit && (
-                <div
-                  style={{
-                    background: "#fef2f2",
-                    border: "1px solid #fecaca",
-                    borderRadius: "6px",
-                    padding: "16px",
-                    marginBottom: "24px",
-                    color: "#991b1b",
-                  }}
-                >
-                  {errors.submit}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} noValidate>
-                {/* Product Name */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Product name <span style={{ color: "#c40000" }}>*</span>
-                  </label>
+              <div style={{ padding: "16px", borderBottom: "1px solid #d5d9d9", background: "white" }}>
+                <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Package size={18} color="#FF9900" />
+                  Catalog
+                </h3>
+                <div style={{ position: "relative" }}>
+                  <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#565959" }} />
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ₹{
-                        touched.name && errors.name ? "#c40000" : "#d5d9d9"
-                      }`,
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      background:
-                        touched.name && errors.name ? "#fff1f1" : "white",
-                    }}
+                    placeholder="Search..."
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    style={{ ...inputStyle, paddingLeft: "30px", paddingBottom: "8px", paddingTop: "8px" }}
                   />
-                  {touched.name && errors.name && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.name}
-                    </p>
-                  )}
                 </div>
+              </div>
 
-                {/* Price */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Price (in local currency){" "}
-                    <span style={{ color: "#c40000" }}>*</span>
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <span
-                      style={{
-                        position: "absolute",
-                        left: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#565959",
-                      }}
-                    >
-                      {formData.country === "India"
-                        ? "₹"
-                        : formData.country === "USA"
-                        ? "₹"
-                        : "£"}
-                    </span>
-                    <input
-                      type="text"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      style={{
-                        width: "97%",
-                        padding: "10px 12px 10px 32px",
-                        border: `1px solid ₹{
-                          touched.price && errors.price ? "#c40000" : "#d5d9d9"
-                        }`,
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        background:
-                          touched.price && errors.price ? "#fff1f1" : "white",
-                      }}
-                    />
-                  </div>
-                  {touched.price && errors.price && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.price}
-                    </p>
-                  )}
-                </div>
-
-                {/* Quantity */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Quantity available{" "}
-                    <span style={{ color: "#c40000" }}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    min="0"
-                    value={formData.quantity}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ₹{
-                        touched.quantity && errors.quantity
-                          ? "#c40000"
-                          : "#d5d9d9"
-                      }`,
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      background:
-                        touched.quantity && errors.quantity
-                          ? "#fff1f1"
-                          : "white",
-                    }}
-                  />
-                  {touched.quantity && errors.quantity && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.quantity}
-                    </p>
-                  )}
-                </div>
-
-                {/* Category */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Category <span style={{ color: "#c40000" }}>*</span>
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid #d5d9d9",
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      background: "white",
-                    }}
-                  >
-                    <option>Electronics</option>
-                    <option>Clothing</option>
-                    <option>Books</option>
-                    <option>Home & Garden</option>
-                    <option>Sports</option>
-                    <option>Toys</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-
-                {/* Country - NEW DROPDOWN */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Country/Region <span style={{ color: "#c40000" }}>*</span>
-                  </label>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ₹{
-                        touched.country && errors.country
-                          ? "#c40000"
-                          : "#d5d9d9"
-                      }`,
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      background:
-                        touched.country && errors.country ? "#fff1f1" : "white",
-                    }}
-                  >
-                    <option value="India">India</option>
-                    <option value="USA">United States</option>
-                    <option value="UK">United Kingdom</option>
-                  </select>
-                  {touched.country && errors.country && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.country}
-                    </p>
-                  )}
-                </div>
-
-                {/* Discount Percentage - NEW FIELD */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Discount Percentage{" "}
-                    <span style={{ color: "#666" }}>(optional)</span>
-                  </label>
+              <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
+                {filteredTemplates.map((template) => (
                   <div
+                    key={template.id}
+                    onClick={() => handleTemplateSelect(template)}
                     style={{
+                      background: "white",
+                      border: "1px solid #d5d9d9",
+                      borderRadius: "6px",
+                      padding: "8px",
+                      cursor: "pointer",
                       display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
+                      gap: "10px",
+                      alignItems: "center"
                     }}
                   >
-                    <input
-                      type="number"
-                      name="discountPercentage"
-                      min="0"
-                      max="90"
-                      step="0.1"
-                      value={formData.discountPercentage}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="0"
-                      style={{
-                        width: "120px",
-                        padding: "10px 12px",
-                        border: `1px solid ₹{
-                          touched.discountPercentage &&
-                          errors.discountPercentage
-                            ? "#c40000"
-                            : "#d5d9d9"
-                        }`,
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        background:
-                          touched.discountPercentage &&
-                          errors.discountPercentage
-                            ? "#fff1f1"
-                            : "white",
-                      }}
-                    />
-                    <span style={{ fontSize: "16px", color: "#555" }}>%</span>
+                    <img src={template.image} alt="" style={{ width: "40px", height: "40px", objectFit: "contain" }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "12px", fontWeight: "600", color: "#0F1111", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{template.name}</div>
+                      <div style={{ fontSize: "11px", color: "#B12704", fontWeight: "bold" }}>₹{parseFloat(template.price).toLocaleString()}</div>
+                    </div>
                   </div>
-                  {touched.discountPercentage && errors.discountPercentage && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.discountPercentage}
-                    </p>
-                  )}
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      color: "#565959",
-                      marginTop: "4px",
-                    }}
-                  >
-                    Enter 0 for no discount. Maximum allowed is 90%.
-                  </p>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                {/* Description */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label
+            {/* Middle Side: Product Form */}
+            <div
+              style={{
+                width: "45%",
+                overflowY: "auto",
+                padding: "30px",
+                background: "white",
+                borderRight: "1px solid #d5d9d9",
+              }}
+            >
+              <div style={{ maxWidth: "500px", margin: "0 auto" }}>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", color: "#0F1111" }}>Product Details</h2>
+                <p style={{ margin: "0 0 24px 0", color: "#565959", fontSize: "13px" }}>Enter info or select from catalog.</p>
+
+                <form onSubmit={addToQueue} noValidate>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div style={{ gridColumn: "span 2" }}>
+                      <label style={labelStyle}>Product name *</label>
+                      <input type="text" name="name" value={formData.name} onChange={handleChange} onBlur={handleBlur} style={{ ...inputStyle, borderColor: touched.name && errors.name ? "#c40000" : "#d5d9d9" }} />
+                      {touched.name && errors.name && <p style={errorStyle}>{errors.name}</p>}
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Price *</label>
+                      <div style={{ position: "relative" }}>
+                        <span style={currencySymbolStyle}>{formData.country === "India" ? "₹" : "$"}</span>
+                        <input type="text" name="price" value={formData.price} onChange={handleChange} onBlur={handleBlur} style={{ ...inputStyle, paddingLeft: "28px", borderColor: touched.price && errors.price ? "#c40000" : "#d5d9d9" }} />
+                      </div>
+                      {touched.price && errors.price && <p style={errorStyle}>{errors.price}</p>}
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Quantity *</label>
+                      <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} onBlur={handleBlur} style={{ ...inputStyle, borderColor: touched.quantity && errors.quantity ? "#c40000" : "#d5d9d9" }} />
+                      {touched.quantity && errors.quantity && <p style={errorStyle}>{errors.quantity}</p>}
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Category *</label>
+                      <select name="category" value={formData.category} onChange={handleChange} style={inputStyle}>
+                        <option>Electronics</option><option>Clothing</option><option>Books</option><option>Home & Garden</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Discount %</label>
+                      <input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleChange} style={inputStyle} />
+                    </div>
+
+                    <div style={{ gridColumn: "span 2" }}>
+                      <label style={labelStyle}>Description *</label>
+                      <textarea name="description" value={formData.description} onChange={handleChange} onBlur={handleBlur} rows={3} style={{ ...inputStyle, resize: "none" }} />
+                      {touched.description && errors.description && <p style={errorStyle}>{errors.description}</p>}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
                     style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontWeight: "500",
-                      color: "#0F1111",
-                    }}
-                  >
-                    Description <span style={{ color: "#c40000" }}>*</span>
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    rows={5}
-                    style={{
+                      marginTop: "20px",
                       width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ₹{
-                        touched.description && errors.description
-                          ? "#c40000"
-                          : "#d5d9d9"
-                      }`,
+                      padding: "12px",
+                      background: "#f0c14b",
+                      border: "1px solid #a88734",
                       borderRadius: "4px",
-                      fontSize: "14px",
-                      background:
-                        touched.description && errors.description
-                          ? "#fff1f1"
-                          : "white",
-                      resize: "vertical",
-                    }}
-                  />
-                  {touched.description && errors.description && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Image URL */}
-                <div style={{ marginBottom: "32px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
                       fontWeight: "500",
-                      color: "#0F1111",
+                      cursor: "pointer"
                     }}
                   >
-                    Product image URL
-                  </label>
-                  <input
-                    type="url"
-                    name="image"
-                    value={formData.image}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="https://example.com/product.jpg"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ₹{
-                        touched.image && errors.image ? "#c40000" : "#d5d9d9"
-                      }`,
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      background:
-                        touched.image && errors.image ? "#fff1f1" : "white",
-                    }}
-                  />
-                  {touched.image && errors.image && (
-                    <p
-                      style={{
-                        color: "#c40000",
-                        fontSize: "13px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.image}
-                    </p>
-                  )}
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      color: "#565959",
-                      marginTop: "6px",
-                    }}
-                  >
-                    Provide a direct link to a high-quality product image
-                  </p>
-                </div>
+                    Add to Queue
+                  </button>
+                </form>
+              </div>
+            </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    background: loading ? "#cccccc" : "#FF9900",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    fontSize: "15px",
-                    fontWeight: "500",
-                    cursor: loading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {loading ? "Adding Product..." : "Add Product"}
-                </button>
-              </form>
+            {/* Right Side: Review & Save */}
+            <div
+              style={{
+                width: "30%",
+                background: "#f3f3f3",
+                display: "flex",
+                flexDirection: "column",
+                padding: "20px",
+              }}
+            >
+              <h2 style={{ margin: "0 0 16px 0", fontSize: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                Queue ({pendingProducts.length})
+                {pendingProducts.length > 0 && (
+                  <span style={{ fontSize: "12px", color: "#0066c0", cursor: "pointer" }} onClick={() => setPendingProducts([])}>Clear all</span>
+                )}
+              </h2>
+
+              <div style={{ flex: 1, overflowY: "auto", marginBottom: "20px" }}>
+                {pendingProducts.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "#565959", marginTop: "40px" }}>
+                    Your queue is empty.<br/>Add products from the left.
+                  </div>
+                ) : (
+                  pendingProducts.map((p) => (
+                    <div key={p.id} style={{ background: "white", padding: "12px", borderRadius: "6px", marginBottom: "10px", border: "1px solid #d5d9d9", position: "relative" }}>
+                      <button 
+                        onClick={() => removeFromQueue(p.id)}
+                        style={{ position: "absolute", right: "8px", top: "8px", border: "none", background: "none", color: "#565959", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        ×
+                      </button>
+                      <div style={{ fontWeight: "600", fontSize: "13px", paddingRight: "20px" }}>{p.name}</div>
+                      <div style={{ fontSize: "12px", color: "#565959", marginTop: "4px" }}>
+                        Qty: {p.quantity} | ₹{p.price}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {success && (
+                 <div style={{ color: "#067D62", fontSize: "14px", marginBottom: "10px", textAlign: "center", fontWeight: "bold" }}>
+                   Successfully saved to inventory!
+                 </div>
+              )}
+
+              <button
+                disabled={pendingProducts.length === 0 || loading}
+                onClick={handleFinalSubmit}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: pendingProducts.length === 0 ? "#ddd" : "#FF9900",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                  cursor: pendingProducts.length === 0 ? "not-allowed" : "pointer",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                }}
+              >
+                {loading ? "Saving..." : `Add ${pendingProducts.length} Products to Inventory`}
+              </button>
             </div>
           </main>
         </div>

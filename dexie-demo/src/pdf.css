@@ -1,0 +1,12 @@
+/* ===== html2canvas SAFE OVERRIDES ===== */
+.pdf-safe,
+.pdf-safe * {
+  /* Kill shadcn color system */
+  color: #000 !important;
+  background-color: transparent !important;
+  border-color: #e5e7eb !important;
+
+  /* Remove effects html2canvas hates */
+  box-shadow: none !important;
+  filter: none !important;
+}

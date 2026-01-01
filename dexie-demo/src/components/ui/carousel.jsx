@@ -1,6 +1,7 @@
 import * as React from "react"
 import useEmblaCarousel from "embla-carousel-react";
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import Autoplay from "embla-carousel-autoplay"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   LogOut,
   ShoppingCart,
@@ -8,40 +8,48 @@ import {
   Box,
   TrendingUp,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+
+// Swiper imports
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination, EffectFade } from "swiper/modules";
+
+// Required Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/effect-fade";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
-  const [index, setIndex] = useState(0);
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("currentUser");
+    navigate("/login");
+  };
 
   const slides = [
     {
       title: "Discover New Arrivals",
-      subtitle: "Hand-picked items just for you",
-      img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+      subtitle: "Fresh styles hand-picked for you",
+      img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=90&w=2400",
+      cta: "Shop Now",
+      path: "/marketplace",
     },
     {
-      title: "Seasonal Deals",
-      subtitle: "Save big on trending styles",
-      img: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=1600&q=80", // sneakers clean background
+      title: "Seasonal Deals Up To 60% Off",
+      subtitle: "Limited time only – don't miss out",
+      img: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=90&w=2400",
+      cta: "Explore Deals",
+      path: "/marketplace",
     },
     {
-      title: "Shop Best Sellers",
-      subtitle: "Top-rated by our customers",
-      img: "https://images.unsplash.com/photo-1593032465175-481ac7f401a0", // fashion street style
+      title: "Best Sellers This Week",
+      subtitle: "Loved by thousands of customers",
+      img: "https://images.unsplash.com/photo-1593032465175-481ac7f401a0?auto=format&fit=crop&q=90&w=2400",
+      cta: "View Top Picks",
+      path: "/marketplace",
     },
   ];
-
-  useEffect(() => {
-    const t = setInterval(() => setIndex((i) => (i + 1) % slides.length), 4000);
-    return () => clearInterval(t);
-  }, []);
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("currentUser");
-    navigate("/");
-  };
 
   const quickActions =
     currentUser?.role === "admin"
@@ -49,28 +57,28 @@ export default function Dashboard() {
           {
             icon: Box,
             label: "Inventory",
-            desc: "Manage products",
+            desc: "Manage stock & listings",
             path: "/manage-inventory",
             color: "#FF9900",
           },
           {
             icon: Package,
             label: "Add Product",
-            desc: "Create new listing",
+            desc: "List new items instantly",
             path: "/add-product",
             color: "#146EB4",
           },
           {
             icon: ShoppingCart,
             label: "Orders",
-            desc: "View all orders",
+            desc: "Process & track orders",
             path: "/manage-orders",
             color: "#007185",
           },
           {
             icon: TrendingUp,
             label: "Analytics",
-            desc: "View insights",
+            desc: "Sales & performance insights",
             path: "/analytics",
             color: "#C7511F",
           },
@@ -79,21 +87,21 @@ export default function Dashboard() {
           {
             icon: ShoppingCart,
             label: "Shop",
-            desc: "Browse products",
+            desc: "Explore new collections",
             path: "/marketplace",
             color: "#FF9900",
           },
           {
             icon: Package,
             label: "My Cart",
-            desc: "Review items",
+            desc: "Review & checkout",
             path: "/cart",
             color: "#146EB4",
           },
           {
             icon: MapPin,
             label: "Orders",
-            desc: "Track shipments",
+            desc: "Track your shipments",
             path: "/orders",
             color: "#007185",
           },
@@ -103,407 +111,374 @@ export default function Dashboard() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#EAEDED",
+        background: "linear-gradient(135deg, #f5f7fa 0%, #e4e9fd 100%)",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      {/* Amazon-style Header */}
-      <header style={{ background: "#131921", padding: "12px 24px" }}>
+      {/* Header – more premium feel */}
+      <header
+        style={{
+          background: "linear-gradient(to right, #131921, #1a2537)",
+          padding: "10px 16px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+        }}
+      >
         <div
           style={{
-            maxWidth: "1500px",
+            maxWidth: 1480,
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 4,
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
                 background: "#FF9900",
+                color: "#131921",
+                fontWeight: 900,
+                fontSize: 22,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#131921",
-                fontWeight: 700,
-                fontSize: 18,
+                boxShadow: "0 4px 12px rgba(255,153,0,0.4)",
               }}
             >
               {currentUser?.name?.charAt(0) || "S"}
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#ccc" }}>
-                Hello, {currentUser?.name?.split(" ")[0] || "Shopper"}
+              <div style={{ fontSize: 13, color: "#a0b0c0" }}>
+                Welcome back,
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                Account & Lists
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#fff" }}>
+                {currentUser?.name?.split(" ")[0] || "Shopper"} !
               </div>
             </div>
           </div>
+
           <button
             onClick={handleLogout}
             style={{
               display: "flex",
-              gap: 8,
               alignItems: "center",
+              gap: 10,
               background: "#FF9900",
-              color: "#131921",
+              color: "#0F1111",
               border: "none",
-              padding: "10px 20px",
-              borderRadius: 4,
+              padding: "5px 12px",
+              borderRadius: 8,
               fontWeight: 700,
+              fontSize: 14,
               cursor: "pointer",
-              fontSize: 13,
-              transition: "all 0.2s",
+              boxShadow: "0 3px 10px rgba(255,153,0,0.35)",
+              transition: "all 0.2s ease",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
           >
-            <LogOut size={16} />
+            <LogOut size={18} />
             Sign Out
           </button>
         </div>
       </header>
 
-      {/* Secondary Header */}
-      {/* <div style={{ background: "#232F3E", padding: "8px 24px", borderBottom: "1px solid #3a4553" }}>
-        <div style={{ maxWidth: "1500px", margin: "0 auto", display: "flex", gap: "20px", alignItems: "center" }}>
-          <div style={{ color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>All</div>
-          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Today's Deals</div>
-          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Customer Service</div>
-          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Registry</div>
-          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Gift Cards</div>
-          <div style={{ color: "#fff", fontSize: 14, cursor: "pointer" }}>Sell</div>
-        </div>
-      </div> */}
-
       <main
         style={{
-          width: "100%",
-          maxWidth: 1500,
+          maxWidth: 1480,
           margin: "0 auto",
-          padding: "20px 24px",
+          padding: "32px 24px",
           flex: 1,
+          width: "100%",
         }}
       >
-        {/* Hero Carousel */}
+        {/* Modern Hero Carousel with Swiper + fade effect */}
         <div
           style={{
-            position: "relative",
-            borderRadius: 0,
+            borderRadius: 16,
             overflow: "hidden",
-            height: 400,
-            marginBottom: 20,
+            boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+            marginBottom: 40,
+            position: "relative",
+            height: "520px",
           }}
         >
-          {slides.map((s, i) => (
-            <div
-              key={i}
-              style={{
-                backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.3)), url(₹{s.img})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                height: "100%",
-                transition: "opacity 600ms ease",
-                opacity: i === index ? 1 : 0,
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "column",
-              }}
-            >
-              <h1
-                style={{
-                  fontSize: 42,
-                  margin: 0,
-                  color: "white",
-                  fontWeight: 700,
-                  textAlign: "center",
-                  textShadow: "0 2px 4px rgba(0,0,0,0.4)",
-                }}
-              >
-                {s.title}
-              </h1>
-              <p
-                style={{
-                  marginTop: 10,
-                  fontSize: 18,
-                  color: "rgba(255,255,255,0.95)",
-                  textAlign: "center",
-                }}
-              >
-                {s.subtitle}
-              </p>
-            </div>
-          ))}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
-              bottom: 20,
-              display: "flex",
-              gap: 8,
-            }}
+          <Swiper
+            modules={[Autoplay, Pagination, EffectFade]}
+            effect="fade"
+            fadeEffect={{ crossFade: true }}
+            autoplay={{ delay: 4500, disableOnInteraction: false }}
+            loop
+            pagination={{ clickable: true, dynamicBullets: true }}
+            style={{ height: "100%" }}
           >
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setIndex(i)}
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 10,
-                  background: i === index ? "#FF9900" : "rgba(255,255,255,0.6)",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.3s",
-                }}
-                aria-label={`Go to slide ₹{i+1}`}
-              />
+            {slides.map((slide, idx) => (
+              <SwiperSlide key={idx}>
+                <div
+                  style={{
+                    height: "100%",
+                    backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.38), rgba(0,0,0,0.68)), url(${slide.img})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    textAlign: "center",
+                    color: "white",
+                    padding: "0 20px",
+                  }}
+                >
+                  <h1
+                    style={{
+                      fontSize: "clamp(2.6rem, 6vw, 4.8rem)",
+                      fontWeight: 800,
+                      margin: "0 0 16px",
+                      textShadow: "0 4px 12px rgba(0,0,0,0.6)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {slide.title}
+                  </h1>
+                  <p
+                    style={{
+                      fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
+                      maxWidth: 680,
+                      margin: "0 0 32px",
+                      opacity: 0.95,
+                    }}
+                  >
+                    {slide.subtitle}
+                  </p>
+                  <button
+                    onClick={() => navigate(slide.path)}
+                    style={{
+                      background: "#FF9900",
+                      color: "#0F1111",
+                      border: "none",
+                      padding: "16px 48px",
+                      fontSize: 18,
+                      fontWeight: 700,
+                      borderRadius: 12,
+                      cursor: "pointer",
+                      boxShadow: "0 6px 20px rgba(255,153,0,0.4)",
+                      transition: "all 0.25s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "scale(1.06)";
+                      e.currentTarget.style.boxShadow = "0 10px 30px rgba(255,153,0,0.5)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(255,153,0,0.4)";
+                    }}
+                  >
+                    {slide.cta} →
+                  </button>
+                </div>
+              </SwiperSlide>
             ))}
-          </div>
+          </Swiper>
         </div>
 
-        {/* Main Navigation Card - Amazon Style */}
-        <div style={{ background: "white", padding: 30, marginBottom: 20 }}>
-          <div style={{ marginBottom: 24 }}>
-            <h2
-              style={{
-                fontSize: 21,
-                fontWeight: 700,
-                color: "#0F1111",
-                margin: 0,
-              }}
-            >
-              Your quick actions
-            </h2>
-          </div>
+        {/* Quick Actions – nicer cards */}
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: "32px",
+            marginBottom: 40,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: "#0F1111",
+              margin: "0 0 32px",
+            }}
+          >
+            Quick Actions
+          </h2>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(₹{quickActions.length}, 1fr)`,
-              gap: 16,
+              gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
+              gap: 24,
             }}
           >
-            {quickActions.map((action, idx) => (
+            {quickActions.map((action, i) => (
               <div
-                key={idx}
+                key={i}
                 onClick={() => navigate(action.path)}
                 style={{
-                  padding: 20,
-                  background: "#fff",
-                  border: "1px solid #D5D9D9",
+                  padding: 28,
+                  background: "#ffffff",
+                  borderRadius: 12,
+                  border: "1px solid #e0e0e0",
                   cursor: "pointer",
-                  transition: "all 0.15s",
                   textAlign: "center",
+                  transition: "all 0.22s ease",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
-                  e.currentTarget.style.borderColor = "#C7C7C7";
+                  e.currentTarget.style.transform = "translateY(-8px)";
+                  e.currentTarget.style.boxShadow = "0 16px 32px rgba(0,0,0,0.12)";
+                  e.currentTarget.style.borderColor = action.color;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.borderColor = "#D5D9D9";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)";
+                  e.currentTarget.style.borderColor = "#e0e0e0";
                 }}
               >
                 <div
                   style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 8,
-                    background: `₹{action.color}15`,
+                    width: 72,
+                    height: 72,
+                    margin: "0 auto 20px",
+                    borderRadius: 16,
+                    background: `${action.color}15`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    margin: "0 auto 16px",
                   }}
                 >
-                  <action.icon size={30} style={{ color: action.color }} />
+                  <action.icon size={36} color={action.color} />
                 </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 16,
-                    color: "#0F1111",
-                    marginBottom: 4,
-                  }}
-                >
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#0F1111", marginBottom: 8 }}>
                   {action.label}
                 </div>
-                <div style={{ fontSize: 12, color: "#565959" }}>
-                  {action.desc}
-                </div>
+                <div style={{ fontSize: 13, color: "#6B7280" }}>{action.desc}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Account Info - Amazon Style */}
-        <div
-          style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}
-        >
+        {/* Account Info */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 32 }}>
           <div
             style={{
               background: "white",
-              padding: 24,
-              border: "1px solid #D5D9D9",
+              borderRadius: 16,
+              padding: 32,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
             }}
           >
             <h3
               style={{
-                fontSize: 18,
-                fontWeight: 700,
+                fontSize: 20,
+                fontWeight: 800,
                 color: "#0F1111",
-                margin: "0 0 20px 0",
-                paddingBottom: 12,
-                borderBottom: "1px solid #e7e7e7",
+                margin: "0 0 24px",
+                paddingBottom: 16,
+                borderBottom: "2px solid #f0f0f0",
               }}
             >
-              Account Details
+              Account Overview
             </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 20,
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#565959",
-                    marginBottom: 6,
-                    textTransform: "uppercase",
-                    fontWeight: 700,
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Email Address
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+              {[
+                { label: "Email Address", value: currentUser?.email || "—" },
+                { label: "Phone Number", value: currentUser?.phone || "—" },
+                {
+                  label: "Customer Since",
+                  value: currentUser?.createdAt
+                    ? new Date(currentUser.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "—",
+                },
+                {
+                  label: "Account Type",
+                  value:
+                    currentUser?.role === "admin" ? (
+                      <span
+                        style={{
+                          background: "#146EB4",
+                          color: "white",
+                          padding: "6px 14px",
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 700,
+                        }}
+                      >
+                        ADMIN
+                      </span>
+                    ) : (
+                      "Shopper"
+                    ),
+                },
+              ].map((item, i) => (
+                <div key={i}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6B7280",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: "#111" }}>
+                    {item.value}
+                  </div>
                 </div>
-                <div
-                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
-                >
-                  {currentUser?.email || "—"}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#565959",
-                    marginBottom: 6,
-                    textTransform: "uppercase",
-                    fontWeight: 700,
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Phone Number
-                </div>
-                <div
-                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
-                >
-                  {currentUser?.phone || "—"}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#565959",
-                    marginBottom: 6,
-                    textTransform: "uppercase",
-                    fontWeight: 700,
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Customer Since
-                </div>
-                <div
-                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
-                >
-                  {currentUser?.createdAt
-                    ? new Date(currentUser.createdAt).toLocaleDateString()
-                    : "—"}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#565959",
-                    marginBottom: 6,
-                    textTransform: "uppercase",
-                    fontWeight: 700,
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Account Type
-                </div>
-                <div
-                  style={{ fontSize: 14, fontWeight: 400, color: "#0F1111" }}
-                >
-                  {currentUser?.role === "admin" ? (
-                    <span
-                      style={{
-                        background: "#146EB4",
-                        color: "white",
-                        padding: "3px 10px",
-                        borderRadius: 2,
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      ADMIN
-                    </span>
-                  ) : (
-                    "Prime Member"
-                  )}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          <div style={{ background: "#146EB4", padding: 24, color: "white" }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 12px 0" }}>
-              Welcome back
+          <div
+            style={{
+              background: "linear-gradient(135deg, #146EB4 0%, #0b5a8a 100%)",
+              borderRadius: 16,
+              padding: 32,
+              color: "white",
+              boxShadow: "0 10px 30px rgba(20,110,180,0.3)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <h3 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 16px" }}>
+              Welcome back{currentUser?.name ? `, ${currentUser.name.split(" ")[0]}` : ""}
             </h3>
-            <p
-              style={{
-                fontSize: 13,
-                opacity: 0.95,
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
+            <p style={{ fontSize: 15, lineHeight: 1.6, opacity: 0.92, margin: 0 }}>
               {currentUser?.role === "admin"
-                ? "Manage your inventory and fulfill orders efficiently."
-                : "Continue shopping where you left off and discover new deals."}
+                ? "Take control of your store — manage inventory, process orders, and track performance in real time."
+                : "Ready for your next favorite find? Browse new arrivals, flash deals, and personalized recommendations."}
             </p>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <footer
         style={{
-          background: "#232F3E",
-          color: "#fff",
-          padding: "40px 24px",
-          marginTop: 40,
+          background: "#0F1111",
+          color: "#aaa",
+          padding: "24px 16px",
+          marginTop: 60,
+          textAlign: "center",
+          fontSize: 13,
         }}
       >
-        <div style={{ maxWidth: 1500, margin: "0 auto", textAlign: "center" }}>
-          <div style={{ fontSize: 13, color: "#DDD" }}>
-            © 2024 Your Store. All rights reserved.
-          </div>
+        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
+          © {new Date().getFullYear()} Your Store • All rights reserved.
         </div>
       </footer>
     </div>

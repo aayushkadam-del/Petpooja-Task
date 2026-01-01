@@ -39,6 +39,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/" element={<UserForm />} />
           <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Protected Routes */}
           <Route

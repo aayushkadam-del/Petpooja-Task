@@ -202,7 +202,7 @@ const SelectField = ({
             paddingRight: "12px",
             paddingTop: "12px",
             paddingBottom: "12px",
-            border: `2px solid ₹{hasError ? '#f87171' : '#e5e7eb'}`,
+            border: `2px solid ${hasError ? '#f87171' : '#e5e7eb'}`,
             borderRadius: "8px",
             fontSize: "15px",
             backgroundColor: "#fff",
@@ -242,14 +242,14 @@ const UserForm = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
   const patterns = {
-    name: /^[a-zA-Z\s]{3,50}₹/,
+    name: /^[a-zA-Z\s]{3,50}$/,
     email:
-      /^(?!.*\.\.)(?!.*\.₹)[A-Za-z0-9!#₹%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#₹%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z]{2,})+₹/,
-    phone: /^[0-9]{10}₹/,
-    age: /^(?:[1-9]|[1-9][0-9]|1[01][0-9]|120)₹/,
+      /^(?!.*\.\.)(?!.*\.₹)[A-Za-z0-9!#₹%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#₹%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z]{2,})+$/,
+    phone: /^[0-9]{10}$/,
+    age: /^(?:[1-9]|[1-9][0-9]|1[01][0-9]|120)$/,
     password:
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@₹!%*?&])[A-Za-z\d@₹!%*?&]{8,}₹/,
-    country: /^(UK|USA|India)₹/, // ✅ added
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@₹!%*?&])[A-Za-z\d@₹!%*?&]{8,}$/,
+    country: /^(UK|USA|India)$/, // ✅ added
   };
 
   const validateField = useCallback(

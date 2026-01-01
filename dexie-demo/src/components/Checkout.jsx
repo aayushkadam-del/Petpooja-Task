@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle, Home, Lock } from "lucide-react";
+import { CheckCircle, Home, Lock, ShoppingCart as ShoppingCartIcon } from "lucide-react";
 import db from "../db/db";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]); // grouped with discount info
   const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [step, setStep] = useState(1); // 1: Shipping, 2: Payment
   const [formData, setFormData] = useState({
     firstName: "",
@@ -21,12 +23,34 @@ export default function Checkout() {
     expiryDate: "",
     cvv: "",
   });
+  // console.log(formData,"formdata-->")
   const [errors, setErrors] = useState({});
+  // console.log(errors,"errorrs-->")
   const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+  const editingOrder = JSON.parse(sessionStorage.getItem("editingOrder") || "null");
 
   useEffect(() => {
     loadCart();
+    loadCartCount();
+    if (editingOrder) {
+      setIsEditing(true);
+      if (editingOrder.shippingAddress) {
+        setFormData((prev) => ({
+          ...prev,
+          ...editingOrder.shippingAddress,
+        }));
+      }
+    }
   }, []);
+
+  const loadCartCount = async () => {
+    try {
+      const count = await db.cart.where("userId").equals(currentUser.id).count();
+      setCartCount(count);
+    } catch (err) {
+      console.error("Error loading cart count:", err);
+    }
+  };
 
   const loadCart = async () => {
     try {
@@ -77,25 +101,25 @@ export default function Checkout() {
 
   const validateShipping = () => {
     const newErrors = {};
-    if (!formData.firstName.match(/^[a-zA-Z\s]{2,50}₹/)) {
+    if (!formData.firstName.match(/^[a-zA-Z\s]{2,50}$/)) {
       newErrors.firstName = "First name must be 2-50 characters";
     }
-    if (!formData.lastName.match(/^[a-zA-Z\s]{2,50}₹/)) {
+    if (!formData.lastName.match(/^[a-zA-Z\s]{2,50}$/)) {
       newErrors.lastName = "Last name must be 2-50 characters";
     }
-    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+₹/)) {
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       newErrors.email = "Invalid email address";
     }
     if (!formData.address.trim()) {
       newErrors.address = "Address is required";
     }
-    if (!formData.city.match(/^[a-zA-Z\s]{2,50}₹/)) {
+    if (!formData.city.match(/^[a-zA-Z\s]{2,50}$/)) {
       newErrors.city = "Invalid city name";
     }
-    if (!formData.postalCode.match(/^\d{5,10}₹/)) {
+    if (!formData.postalCode.match(/^\d{5,10}$/)) {
       newErrors.postalCode = "Postal code must be 5-10 digits";
     }
-    if (!formData.phone.match(/^\d{10}₹/)) {
+    if (!formData.phone.match(/^\d{10}$/)) {
       newErrors.phone = "Phone must be 10 digits";
     }
     setErrors(newErrors);
@@ -103,14 +127,17 @@ export default function Checkout() {
   };
 
   const validatePayment = () => {
+    if (currentUser.role === "admin" && editingOrder) {
+      return true;
+    }
     const newErrors = {};
-    if (!formData.cardNumber.match(/^\d{16}₹/)) {
+    if (!formData.cardNumber.match(/^\d{16}$/)) {
       newErrors.cardNumber = "Card number must be 16 digits";
     }
-    if (!formData.expiryDate.match(/^\d{2}\/\d{2}₹/)) {
+    if (!formData.expiryDate.match(/^\d{2}\/\d{2}$/)) {
       newErrors.expiryDate = "Format: MM/YY";
     }
-    if (!formData.cvv.match(/^\d{3,4}₹/)) {
+    if (!formData.cvv.match(/^\d{3,4}$/)) {
       newErrors.cvv = "CVV must be 3-4 digits";
     }
     setErrors(newErrors);
@@ -123,13 +150,7 @@ export default function Checkout() {
     }
   };
 
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-
-    if (!validatePayment()) {
-      return;
-    }
-
+  const submitOrder = async () => {
     try {
       const orderItems = cartItems.map((item) => ({
         productId: item.productId,
@@ -142,7 +163,7 @@ export default function Checkout() {
       const subtotal = calculateSubtotal();
       const total = subtotal * 1.1;
 
-      await db.orders.add({
+      const orderData = {
         userId: currentUser.id,
         items: orderItems,
         subtotal: subtotal,
@@ -157,21 +178,38 @@ export default function Checkout() {
           postalCode: formData.postalCode,
           phone: formData.phone,
         },
-        status: "confirmed",
-        createdAt: new Date(),
-      });
+        status: editingOrder ? editingOrder.status : "confirmed",
+        createdAt: editingOrder ? editingOrder.createdAt : new Date(),
+        updatedAt: new Date(),
+      };
+
+      if (editingOrder) {
+        await db.orders.update(editingOrder.id, orderData);
+        sessionStorage.removeItem("editingOrder");
+      } else {
+        await db.orders.add(orderData);
+      }
 
       // Clear cart - delete all entries for this user
       await db.cart.where("userId").equals(currentUser.id).delete();
 
       setOrderPlaced(true);
       setTimeout(() => {
-        navigate("/orders");
+        navigate(currentUser.role === "admin" ? "/manage-orders" : "/orders");
       }, 3000);
     } catch (error) {
       console.error("Error placing order:", error);
       setErrors({ submit: "Error placing order. Please try again." });
     }
+  };
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+
+    if (!validatePayment()) {
+      return;
+    }
+    await submitOrder();
   };
 
   const handleInputChange = (e) => {
@@ -260,7 +298,7 @@ export default function Checkout() {
               color: "#333",
             }}
           >
-            Order Confirmed!
+            {isEditing ? "Order Updated!" : "Order Confirmed!"}
           </h1>
           <p
             style={{
@@ -270,8 +308,9 @@ export default function Checkout() {
               lineHeight: "1.6",
             }}
           >
-            Thank you for your purchase. Your order has been successfully placed
-            and will be shipped soon.
+            {isEditing
+              ? "Your order has been successfully edited and changed."
+              : "Thank you for your purchase. Your order has been successfully placed and will be shipped soon."}
           </p>
           <p style={{ fontSize: "14px", color: "#999", marginBottom: "20px" }}>
             Redirecting to your orders...
@@ -324,8 +363,18 @@ export default function Checkout() {
             <Home size={24} /> Shop
           </div>
           <div style={{ flex: 1 }}></div>
+          <div onClick={() => navigate("/cart")} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#FFB81C', fontSize: '14px', position: 'relative', marginRight: '10px' }}>
+            <div style={{ position: 'relative' }}>
+              <ShoppingCartIcon size={22} />
+              {cartCount > 0 && (
+                <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#f08804', color: 'white', borderRadius: '50%', padding: '2px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                  {cartCount}
+                </span>
+              )}
+            </div>
+          </div>
           <span style={{ color: "#fff", fontSize: "13px" }}>
-            Secure checkout
+            {currentUser.role === "admin" && editingOrder ? "Editing Order" : "Secure checkout"}
           </span>
           <Lock size={18} style={{ color: "#FFB81C" }} />
         </div>
@@ -372,42 +421,46 @@ export default function Checkout() {
                   color: step >= 1 ? "#333" : "#999",
                 }}
               >
-                Shipping
+                {currentUser.role === "admin" && editingOrder ? "Order Details" : "Shipping"}
               </span>
             </div>
-            <div
-              style={{
-                width: "40px",
-                height: "2px",
-                background: step >= 2 ? "#FF9900" : "#ddd",
-              }}
-            ></div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  background: step >= 2 ? "#FF9900" : "#ddd",
-                  color: "white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "700",
-                  fontSize: "16px",
-                }}
-              >
-                2
-              </div>
-              <span
-                style={{
-                  fontWeight: "600",
-                  color: step >= 2 ? "#333" : "#999",
-                }}
-              >
-                Payment
-              </span>
-            </div>
+            {!(currentUser.role === "admin" && editingOrder) && (
+              <>
+                <div
+                  style={{
+                    width: "40px",
+                    height: "2px",
+                    background: step >= 2 ? "#FF9900" : "#ddd",
+                  }}
+                ></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      background: step >= 2 ? "#FF9900" : "#ddd",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "700",
+                      fontSize: "16px",
+                    }}
+                  >
+                    2
+                  </div>
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      color: step >= 2 ? "#333" : "#999",
+                    }}
+                  >
+                    Payment
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -436,7 +489,9 @@ export default function Checkout() {
                     color: "#333",
                   }}
                 >
-                  Enter your address
+                  {currentUser.role === "admin" && editingOrder
+                    ? "Edit order details"
+                    : "Enter your address"}
                 </h2>
 
                 <form
@@ -474,7 +529,7 @@ export default function Checkout() {
                         style={{
                           width: "100%",
                           padding: "10px 12px",
-                          border: `1px solid ₹{errors.firstName ? '#f44336' : '#ddd'}`,
+                          border: `1px solid ${errors.firstName ? '#f44336' : '#ddd'}`,
                           borderRadius: "4px",
                           fontSize: "14px",
                           boxSizing: "border-box",
@@ -516,7 +571,7 @@ export default function Checkout() {
                         style={{
                           width: "100%",
                           padding: "10px 12px",
-                          border: `1px solid ₹{errors.lastName ? '#f44336' : '#ddd'}`,
+                          border: `1px solid ${errors.lastName ? '#f44336' : '#ddd'}`,
                           borderRadius: "4px",
                           fontSize: "14px",
                           boxSizing: "border-box",
@@ -559,7 +614,7 @@ export default function Checkout() {
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        border: `1px solid ₹{errors.email ? '#f44336' : '#ddd'}`,
+                        border: `1px solid ${errors.email ? '#f44336' : '#ddd'}`,
                         borderRadius: "4px",
                         fontSize: "14px",
                         boxSizing: "border-box",
@@ -601,7 +656,7 @@ export default function Checkout() {
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        border: `1px solid ₹{errors.address ? '#f44336' : '#ddd'}`,
+                        border: `1px solid ${errors.address ? '#f44336' : '#ddd'}`,
                         borderRadius: "4px",
                         fontSize: "14px",
                         boxSizing: "border-box",
@@ -651,7 +706,7 @@ export default function Checkout() {
                         style={{
                           width: "100%",
                           padding: "10px 12px",
-                          border: `1px solid ₹{errors.city ? '#f44336' : '#ddd'}`,
+                          border: `1px solid ${errors.city ? '#f44336' : '#ddd'}`,
                           borderRadius: "4px",
                           fontSize: "14px",
                           boxSizing: "border-box",
@@ -693,7 +748,7 @@ export default function Checkout() {
                         style={{
                           width: "100%",
                           padding: "10px 12px",
-                          border: `1px solid ₹{errors.postalCode ? '#f44336' : '#ddd'}`,
+                          border: `1px solid ${errors.postalCode ? '#f44336' : '#ddd'}`,
                           borderRadius: "4px",
                           fontSize: "14px",
                           boxSizing: "border-box",
@@ -736,7 +791,7 @@ export default function Checkout() {
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        border: `1px solid ₹{errors.phone ? '#f44336' : '#ddd'}`,
+                        border: `1px solid ${errors.phone ? '#f44336' : '#ddd'}`,
                         borderRadius: "4px",
                         fontSize: "14px",
                         boxSizing: "border-box",
@@ -778,7 +833,9 @@ export default function Checkout() {
                       (e.currentTarget.style.background = "#FF9900")
                     }
                   >
-                    Continue to Payment
+                    {currentUser.role === "admin" && editingOrder
+                      ? "Continue to Save"
+                      : "Continue to Payment"}
                   </button>
                 </form>
               </>
@@ -792,148 +849,161 @@ export default function Checkout() {
                     color: "#333",
                   }}
                 >
-                  Enter your payment details
+                  {currentUser.role === "admin" && editingOrder
+                    ? "Review and Save"
+                    : "Enter your payment details"}
                 </h2>
 
                 <form onSubmit={handlePlaceOrder}>
-                  <div style={{ marginBottom: "20px" }}>
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontWeight: "600",
-                        color: "#333",
-                        fontSize: "14px",
-                      }}
-                    >
-                      Credit Card Number *
-                    </label>
-                    <input
-                      type="text"
-                      name="cardNumber"
-                      value={formData.cardNumber}
-                      onChange={handleInputChange}
-                      placeholder="1234 5678 9012 3456"
-                      maxLength="16"
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: `1px solid ₹{errors.cardNumber ? '#f44336' : '#ddd'}`,
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        boxSizing: "border-box",
-                        fontFamily: "monospace",
-                        letterSpacing: "2px",
-                      }}
-                    />
-                    {errors.cardNumber && (
-                      <span
-                        style={{
-                          color: "#f44336",
-                          fontSize: "12px",
-                          marginTop: "4px",
-                          display: "block",
-                        }}
-                      >
-                        {errors.cardNumber}
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "15px",
-                      marginBottom: "30px",
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: "8px",
-                          fontWeight: "600",
-                          color: "#333",
-                          fontSize: "14px",
-                        }}
-                      >
-                        Expiry Date (MM/YY) *
-                      </label>
-                      <input
-                        type="text"
-                        name="expiryDate"
-                        value={formData.expiryDate}
-                        onChange={handleInputChange}
-                        placeholder="12/25"
-                        maxLength="5"
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          border: `1px solid ₹{errors.expiryDate ? '#f44336' : '#ddd'}`,
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          boxSizing: "border-box",
-                          fontFamily: "inherit",
-                        }}
-                      />
-                      {errors.expiryDate && (
-                        <span
+                  {!(currentUser.role === "admin" && editingOrder) && (
+                    <>
+                      <div style={{ marginBottom: "20px" }}>
+                        <label
                           style={{
-                            color: "#f44336",
-                            fontSize: "12px",
-                            marginTop: "4px",
                             display: "block",
+                            marginBottom: "8px",
+                            fontWeight: "600",
+                            color: "#333",
+                            fontSize: "14px",
                           }}
                         >
-                          {errors.expiryDate}
-                        </span>
-                      )}
-                    </div>
+                          Credit Card Number *
+                        </label>
+                        <input
+                          type="text"
+                          name="cardNumber"
+                          value={formData.cardNumber}
+                          onChange={handleInputChange}
+                          placeholder="1234 5678 9012 3456"
+                          maxLength="16"
+                          style={{
+                            width: "100%",
+                            padding: "10px 12px",
+                            border: `1px solid ₹{errors.cardNumber ? '#f44336' : '#ddd'}`,
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            boxSizing: "border-box",
+                            fontFamily: "monospace",
+                            letterSpacing: "2px",
+                          }}
+                        />
+                        {errors.cardNumber && (
+                          <span
+                            style={{
+                              color: "#f44336",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                              display: "block",
+                            }}
+                          >
+                            {errors.cardNumber}
+                          </span>
+                        )}
+                      </div>
 
-                    <div>
-                      <label
+                      <div
                         style={{
-                          display: "block",
-                          marginBottom: "8px",
-                          fontWeight: "600",
-                          color: "#333",
-                          fontSize: "14px",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "15px",
+                          marginBottom: "30px",
                         }}
                       >
-                        CVV *
-                      </label>
-                      <input
-                        type="text"
-                        name="cvv"
-                        value={formData.cvv}
-                        onChange={handleInputChange}
-                        placeholder="123"
-                        maxLength="4"
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          border: `1px solid ₹{errors.cvv ? '#f44336' : '#ddd'}`,
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          boxSizing: "border-box",
-                          fontFamily: "inherit",
-                        }}
-                      />
-                      {errors.cvv && (
-                        <span
-                          style={{
-                            color: "#f44336",
-                            fontSize: "12px",
-                            marginTop: "4px",
-                            display: "block",
-                          }}
-                        >
-                          {errors.cvv}
-                        </span>
-                      )}
+                        <div>
+                          <label
+                            style={{
+                              display: "block",
+                              marginBottom: "8px",
+                              fontWeight: "600",
+                              color: "#333",
+                              fontSize: "14px",
+                            }}
+                          >
+                            Expiry Date (MM/YY) *
+                          </label>
+                          <input
+                            type="text"
+                            name="expiryDate"
+                            value={formData.expiryDate}
+                            onChange={handleInputChange}
+                            placeholder="12/25"
+                            maxLength="5"
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              border: `1px solid ₹{errors.expiryDate ? '#f44336' : '#ddd'}`,
+                              borderRadius: "4px",
+                              fontSize: "14px",
+                              boxSizing: "border-box",
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          {errors.expiryDate && (
+                            <span
+                              style={{
+                                color: "#f44336",
+                                fontSize: "12px",
+                                marginTop: "4px",
+                                display: "block",
+                              }}
+                            >
+                              {errors.expiryDate}
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <label
+                            style={{
+                              display: "block",
+                              marginBottom: "8px",
+                              fontWeight: "600",
+                              color: "#333",
+                              fontSize: "14px",
+                            }}
+                          >
+                            CVV *
+                          </label>
+                          <input
+                            type="text"
+                            name="cvv"
+                            value={formData.cvv}
+                            onChange={handleInputChange}
+                            placeholder="123"
+                            maxLength="4"
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              border: `1px solid ₹{errors.cvv ? '#f44336' : '#ddd'}`,
+                              borderRadius: "4px",
+                              fontSize: "14px",
+                              boxSizing: "border-box",
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          {errors.cvv && (
+                            <span
+                              style={{
+                                color: "#f44336",
+                                fontSize: "12px",
+                                marginTop: "4px",
+                                display: "block",
+                              }}
+                            >
+                              {errors.cvv}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {currentUser.role === "admin" && editingOrder && (
+                    <div style={{ marginBottom: "30px", padding: "15px", background: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef" }}>
+                      <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+                        Review the updated order items and shipping details. Click the button below to save your changes.
+                      </p>
                     </div>
-                  </div>
+                  )}
 
                   {errors.submit && (
                     <div
@@ -996,7 +1066,7 @@ export default function Checkout() {
                         (e.currentTarget.style.background = "#FF9900")
                       }
                     >
-                      Place Order
+                      {editingOrder ? "Save Order" : "Place Order"}
                     </button>
                   </div>
                 </form>

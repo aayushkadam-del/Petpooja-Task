@@ -6,12 +6,14 @@ import { STATIC_PRODUCTS } from "../data/products";
 export default function Marketplace() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  // console.log(products,"products")
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [cartCount, setCartCount] = useState(0);
 
   const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
 
@@ -21,7 +23,18 @@ export default function Marketplace() {
       return;
     }
     loadProducts();
+    loadCartCount();
+    
   }, []);
+
+  const loadCartCount = async () => {
+    try {
+      const count = await db?.cart?.where("userId").equals(currentUser.id).count();
+      setCartCount(count);
+    } catch (err) {
+      console.error("Error loading cart count:", err);
+    }
+  };
 
   const loadProducts = async () => {
     setLoading(true);
@@ -36,7 +49,6 @@ export default function Marketplace() {
       setLoading(false);
     }
   };
-
   const categories = [
     "All",
     ...new Set(products.map((p) => p.category || "Uncategorized")),
@@ -52,13 +64,15 @@ export default function Marketplace() {
     return matchesCategory && matchesSearch && inStock;
   });
 
+  // console.log(filteredProducts,"filteredProducts")
   const handleAddToCart = async () => {
     if (!selectedProduct) return;
 
     const available = selectedProduct.quantity ?? 999;
     if (quantity > available) {
-      setMessage(`Only ₹{available} left in stock!`);
+      setMessage(`Only ${available} left in stock!`);
       setTimeout(() => setMessage(""), 2200);
+      
       return;
     }
 
@@ -81,9 +95,12 @@ export default function Marketplace() {
           quantity: Math.max(0, selectedProduct.quantity - quantity),
         });
         loadProducts(); // refresh stock
+        loadCartCount(); // refresh cart count
+      } else {
+        loadCartCount();
       }
 
-      setMessage(`Added ₹{quantity} to your cart`);
+      setMessage(`Added ${quantity} to your cart`);
       setTimeout(() => {
         setMessage("");
         setSelectedProduct(null);
@@ -97,9 +114,9 @@ export default function Marketplace() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("currentUser");
-    navigate("/");
+    navigate("/login");
   };
-
+// console.log(productquantity,"productquantity")
   return (
     <div
       style={{
@@ -165,6 +182,7 @@ export default function Marketplace() {
               style={{
                 border: "none",
                 outline: "none",
+                color:'black',
                 flex: 1,
                 fontSize: "15px",
               }}
@@ -184,9 +202,30 @@ export default function Marketplace() {
                 gap: "6px",
                 fontSize: "14px",
                 cursor: "pointer",
+                position: "relative",
               }}
             >
-              <ShoppingCart size={22} /> Cart
+              <div style={{ position: "relative" }}>
+                <ShoppingCart size={22} />
+                {cartCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: "-8px",
+                      right: "-8px",
+                      background: "#f08804",
+                      color: "white",
+                      borderRadius: "50%",
+                      padding: "2px 6px",
+                      fontSize: "11px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+              Cart
             </button>
 
             <button
@@ -271,8 +310,8 @@ export default function Marketplace() {
                 }}
               >
                 {filteredProducts.length} results
-                {selectedCategory !== "All" && ` in ₹{selectedCategory}`}
-                {searchQuery && ` for "₹{searchQuery}"`}
+                {selectedCategory !== "All" && ` in ${selectedCategory}`}
+                {searchQuery && ` for "${searchQuery}"`}
               </div>
 
               {filteredProducts.length === 0 ? (
@@ -369,7 +408,7 @@ export default function Marketplace() {
                           }}
                         >
                           {product.quantity > 0
-                            ? `₹{product.quantity} in stock`
+                            ? `${product.quantity} in stock`
                             : "Out of stock"}
                         </div>
                       </div>
@@ -491,11 +530,11 @@ export default function Marketplace() {
               <div
                 style={{
                   fontSize: "14px",
-                  color: selectedProduct.quantity > 0 ? "#007600" : "#c40000",
+                  color: selectedProduct?.quantity > 0 ? "#007600" : "#c40000",
                 }}
               >
                 {selectedProduct.quantity > 0
-                  ? `₹{selectedProduct.quantity} available`
+                  ? `${selectedProduct.quantity} available`
                   : "Currently unavailable"}
               </div>
 

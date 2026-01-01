@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle, XCircle, RefreshCw, ArrowLeft } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, ArrowLeft, Edit, Plus, Trash2 } from "lucide-react";
 import db from "../db/db";
 
 export default function ManageOrders() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("cards");
+  const [currentPage, setCurrentPage] = useState(1);
   const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+  const pageSize = 10;
 
   useEffect(() => {
     if (!currentUser) {
@@ -21,6 +24,36 @@ export default function ManageOrders() {
     loadOrders();
   }, []);
 
+  const handleEditOrder = async (order) => {
+    try {
+      // Clear existing cart for the current user
+      await db.cart.where("userId").equals(currentUser.id).delete();
+
+      // Add order items back to the cart
+      for (const item of order.items) {
+        // If the item has a productId, we use it. Otherwise, we might have an issue.
+        // Assuming items in order have productId.
+        for (let i = 0; i < (item.quantity || 1); i++) {
+          await db.cart.add({
+            userId: currentUser.id,
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            addedAt: new Date(),
+          });
+        }
+      }
+
+      // Save order info for checkout
+      sessionStorage.setItem("editingOrder", JSON.stringify(order));
+      navigate("/marketplace");
+    } catch (err) {
+      console.error("Failed to prepare order for editing", err);
+      alert("Failed to start editing. Please try again.");
+    }
+  };
+
   const loadOrders = async () => {
     setLoading(true);
     try {
@@ -32,6 +65,7 @@ export default function ManageOrders() {
         })
       );
       setOrders(withUser);
+      setCurrentPage(1);
     } catch (err) {
       console.error("Error loading orders", err);
     } finally {
@@ -59,19 +93,6 @@ export default function ManageOrders() {
         })
       : "—";
 
-  //   const getStatusBadgeStyle = (status) => {
-  //     const styles = {
-  //       pending:    { bg: '#fef3e8', color: '#c45500', border: '#ff9900' },
-  //       confirmed:  { bg: '#e3f4e9', color: '#007600' },
-  //       processing: { bg: '#e3f4e9', color: '#007600' },
-  //       shipped:    { bg: '#e3f4e9', color: '#007600' },
-  //       delivered:  { bg: '#e3f4e9', color: '#007600' },
-  //       cancelled:  { bg: '#fdeaeb', color: '#c40000' },
-  //     };
-  //     const s = status?.toLowerCase() || 'pending';
-  //     return styles[s] || { bg: '#f0f0f0', color: '#444', border: '#ccc' };
-  //   };
-
   if (loading) {
     return (
       <div
@@ -87,201 +108,249 @@ export default function ManageOrders() {
     );
   }
 
+  const totalPages = Math.ceil(orders.length / pageSize);
+  const paginatedOrders = orders.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const renderPagination = () => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: "8px",
+        marginTop: "24px",
+      }}
+    >
+      <button
+        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        style={{
+          padding: "8px 16px",
+          border: "1px solid #d1d5db",
+          borderRadius: "6px",
+          background: "#fff",
+          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          opacity: currentPage === 1 ? 0.5 : 1,
+        }}
+      >
+        Previous
+      </button>
+
+      {Array.from({ length: totalPages }, (_, i) => (
+        <button
+          key={i + 1}
+          onClick={() => setCurrentPage(i + 1)}
+          style={{
+            padding: "8px 16px",
+            border: "1px solid #d1d5db",
+            borderRadius: "6px",
+            background: currentPage === i + 1 ? "#f59e0b" : "#fff",
+            color: currentPage === i + 1 ? "#fff" : "#111",
+            fontWeight: currentPage === i + 1 ? 600 : 400,
+            cursor: "pointer",
+          }}
+        >
+          {i + 1}
+        </button>
+      ))}
+
+      <button
+        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+        style={{
+          padding: "8px 16px",
+          border: "1px solid #d1d5db",
+          borderRadius: "6px",
+          background: "#fff",
+          cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+          opacity: currentPage === totalPages ? 0.5 : 1,
+        }}
+      >
+        Next
+      </button>
+    </div>
+  );
+
   return (
     <div
       style={{
         background: "#f3f3f3",
         minHeight: "100vh",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         padding: "24px 16px",
       }}
     >
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header – Amazon style */}
+        {/* Header */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "24px",
-            paddingBottom: "16px",
+            marginBottom: "32px",
+            paddingBottom: "20px",
             borderBottom: "1px solid #ddd",
           }}
         >
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "28px",
-              fontWeight: 500,
-              color: "#111",
-            }}
-          >
+          <h1 style={{ margin: 0, fontSize: "2rem", fontWeight: 600, color: "#111" }}>
             Manage Orders
           </h1>
 
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button
               onClick={() => navigate("/dashboard")}
               style={{
-                padding: "8px 16px",
-                border: "1px solid #d5d9d9",
-                borderRadius: "3px",
+                padding: "10px 20px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
                 background: "#fff",
-                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "8px",
+                cursor: "pointer",
               }}
             >
-              <ArrowLeft size={16} /> Back to Dashboard
+              <ArrowLeft size={18} /> Back to Dashboard
             </button>
+
             <button
               onClick={loadOrders}
               style={{
-                padding: "8px 16px",
-                border: "1px solid #d5d9d9",
-                borderRadius: "3px",
+                padding: "10px 20px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
                 background: "#fff",
-                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "8px",
+                cursor: "pointer",
               }}
             >
-              <RefreshCw size={16} /> Refresh
+              <RefreshCw size={18} /> Refresh
+            </button>
+
+            <button
+              onClick={() => setViewMode("cards")}
+              style={{
+                padding: "10px 20px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                background: viewMode === "cards" ? "#f59e0b" : "#fff",
+                color: viewMode === "cards" ? "#fff" : "#111",
+                fontWeight: viewMode === "cards" ? 600 : 400,
+                cursor: "pointer",
+              }}
+            >
+              Card View
+            </button>
+
+            <button
+              onClick={() => setViewMode("table")}
+              style={{
+                padding: "10px 20px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                background: viewMode === "table" ? "#f59e0b" : "#fff",
+                color: viewMode === "table" ? "#fff" : "#111",
+                fontWeight: viewMode === "table" ? 600 : 400,
+                cursor: "pointer",
+              }}
+            >
+              Table View
             </button>
           </div>
         </div>
 
-        {/* Quick filters (Amazon-like status summary) */}
+        {/* Status Summary */}
         <div
           style={{
             display: "flex",
-            gap: "16px",
-            marginBottom: "24px",
             flexWrap: "wrap",
+            gap: "12px",
+            marginBottom: "32px",
           }}
         >
-          {["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"].map(
-            (s) => {
-              const count = orders.filter(
-                (o) => (o.status || "pending").toLowerCase() === s.toLowerCase()
-              ).length;
-              return (
-                <div
-                  key={s}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    background: count > 0 ? "#fff" : "#f0f0f0",
-                    border: "1px solid #ddd",
-                    fontSize: "14px",
-                    fontWeight: count > 0 ? 500 : 400,
-                    color: count > 0 ? "#111" : "#666",
-                  }}
-                >
-                  {s} ({count})
-                </div>
-              );
-            }
-          )}
+          {["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"].map((s) => {
+            const count = orders.filter(
+              (o) => (o.status || "pending").toLowerCase() === s.toLowerCase()
+            ).length;
+            return (
+              <div
+                key={s}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "9999px",
+                  background: count > 0 ? "#fff" : "#f3f4f6",
+                  border: "1px solid #d1d5db",
+                  fontSize: "0.95rem",
+                  fontWeight: count > 0 ? 600 : 400,
+                  color: count > 0 ? "#111" : "#6b7280",
+                }}
+              >
+                {s} ({count})
+              </div>
+            );
+          })}
         </div>
 
         {orders.length === 0 ? (
           <div
             style={{
               background: "white",
-              padding: "32px",
+              padding: "40px",
               textAlign: "center",
-              borderRadius: "8px",
+              borderRadius: "12px",
               border: "1px solid #ddd",
-              color: "#555",
+              color: "#6b7280",
+              fontSize: "1.1rem",
             }}
           >
             No orders found.
           </div>
-        ) : (
-          <div style={{ display: "grid", gap: "16px" }}>
-            {orders.map((order) => {
-              //   const statusStyle = getStatusBadgeStyle(order.status);
-
-              return (
-                <div
-                  key={order.id}
-                  style={{
-                    background: "white",
-                    border: "1px solid #ddd",
-                    borderRadius: "8px",
-                    padding: "20px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  {/* Header row */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: "16px",
-                      flexWrap: "wrap",
-                      gap: "16px",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          color: "#555",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Order <strong>#{order.id}</strong> •{" "}
-                        {formatDate(order.createdAt)}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "#0066c0",
-                        }}
-                      >
-                        {order._user?.name || "Guest"} •{" "}
-                        {order._user?.email || "—"}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: "10px",
-                        minWidth: "240px",
-                      }}
-                    >
-                      {/* Status */}
-                      <div>
-                        <label
-                          style={{
-                            fontSize: "12px",
-                            color: "#555",
-                            display: "block",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          Order Status
-                        </label>
+        ) : viewMode === "table" ? (
+          <div>
+            <div
+              style={{
+                background: "white",
+                borderRadius: "12px",
+                overflow: "hidden",
+                border: "1px solid #ddd",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#f8f9fa" }}>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>ID</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Date</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Customer</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Status</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Payment</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total</th>
+                    <th style={{ padding: "16px", textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedOrders.map((order) => (
+                    <tr key={order.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={{ padding: "16px" }}>#{order.id}</td>
+                      <td style={{ padding: "16px" }}>{formatDate(order.createdAt)}</td>
+                      <td style={{ padding: "16px" }}>
+                        <div>{order._user?.name || "Guest"}</div>
+                        <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                          {order._user?.email || "—"}
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px" }}>
                         <select
                           value={order.status || "pending"}
-                          onChange={(e) =>
-                            updateOrder(order.id, { status: e.target.value })
-                          }
+                          onChange={(e) => updateOrder(order.id, { status: e.target.value })}
                           style={{
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            border: "1px solid #d5d9d9",
-                            minWidth: "160px",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
                           }}
                         >
                           <option value="pending">Pending</option>
@@ -291,189 +360,263 @@ export default function ManageOrders() {
                           <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
-                      </div>
-
-                      {/* Payment */}
-                      <div>
-                        <label
-                          style={{
-                            fontSize: "12px",
-                            color: "#555",
-                            display: "block",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          Payment
-                        </label>
+                      </td>
+                      <td style={{ padding: "16px" }}>
                         <select
                           value={order.paymentStatus || "paid"}
-                          onChange={(e) =>
-                            updateOrder(order.id, {
-                              paymentStatus: e.target.value,
-                            })
-                          }
+                          onChange={(e) => updateOrder(order.id, { paymentStatus: e.target.value })}
                           style={{
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            border: "1px solid #d5d9d9",
-                            minWidth: "160px",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid #d1d5db",
                           }}
                         >
                           <option value="pending">Pending</option>
                           <option value="paid">Paid</option>
                           <option value="refunded">Refunded</option>
                         </select>
-                      </div>
-
-                      {/* Quick actions */}
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          marginTop: "8px",
-                        }}
-                      >
+                      </td>
+                      <td style={{ padding: "16px", fontWeight: 600 }}>
+                        ₹{order.total?.toFixed(2) || "0.00"}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "right" }}>
                         <button
-                          onClick={() => navigate(`/orders/₹{order.id}`)} // ← assume you have detail page
+                          onClick={() => navigate(`/orders/${order.id}`)}
                           style={{
-                            padding: "6px 14px",
-                            border: "1px solid #0066c0",
-                            color: "#0066c0",
+                            padding: "8px 12px",
+                            marginRight: "8px",
+                            border: "1px solid #3b82f6",
+                            color: "#3b82f6",
                             background: "transparent",
-                            borderRadius: "3px",
+                            borderRadius: "6px",
                             cursor: "pointer",
                           }}
                         >
-                          View Order
+                          View
                         </button>
                         <button
-                          onClick={() =>
-                            updateOrder(order.id, { status: "shipped" })
-                          }
-                          disabled={
-                            order.status === "shipped" ||
-                            order.status === "delivered"
-                          }
+                          onClick={() => handleEditOrder(order)}
                           style={{
-                            padding: "6px 14px",
-                            background:
-                              order.status === "shipped" ? "#ccc" : "#ffa41c",
+                            padding: "8px 12px",
+                            marginRight: "8px",
+                            border: "1px solid #8b5cf6",
+                            color: "#8b5cf6",
+                            background: "transparent",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => updateOrder(order.id, { status: "shipped" })}
+                          disabled={order.status === "shipped" || order.status === "delivered"}
+                          style={{
+                            padding: "8px 16px",
+                            background: order.status === "shipped" || order.status === "delivered" ? "#d1d5db" : "#f59e0b",
                             color: "white",
                             border: "none",
-                            borderRadius: "3px",
-                            cursor: "pointer",
-                            fontWeight: 500,
+                            borderRadius: "6px",
+                            cursor: order.status === "shipped" || order.status === "delivered" ? "not-allowed" : "pointer",
+                            opacity: order.status === "shipped" || order.status === "delivered" ? 0.6 : 1,
                           }}
                         >
-                          Mark as Shipped
+                          Mark Shipped
                         </button>
-                      </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && renderPagination()}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: "24px" }}>
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                style={{
+                  background: "white",
+                  borderRadius: "12px",
+                  padding: "24px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "24px",
+                    flexWrap: "wrap",
+                    gap: "20px",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "0.9rem", color: "#6b7280", marginBottom: "4px" }}>
+                      Order <strong>#{order.id}</strong> • {formatDate(order.createdAt)}
+                    </div>
+                    <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "#1f2937" }}>
+                      {order._user?.name || "Guest"} • {order._user?.email || "—"}
                     </div>
                   </div>
 
-                  {/* Two-column content */}
-                  <div
-                    style={{ display: "flex", gap: "32px", flexWrap: "wrap" }}
-                  >
-                    {/* Shipping */}
-                    <div style={{ flex: "1", minWidth: "260px" }}>
-                      <div
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px", minWidth: "240px" }}>
+                    <div>
+                      <label style={{ fontSize: "0.85rem", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+                        Status
+                      </label>
+                      <select
+                        value={order.status || "pending"}
+                        onChange={(e) => updateOrder(order.id, { status: e.target.value })}
                         style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          marginBottom: "8px",
-                          color: "#111",
+                          padding: "10px 14px",
+                          borderRadius: "6px",
+                          border: "1px solid #d1d5db",
+                          minWidth: "160px",
                         }}
                       >
-                        Shipping Address
-                      </div>
-                      {order.shippingAddress ? (
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            lineHeight: "1.5",
-                            color: "#444",
-                          }}
-                        >
-                          <div>
-                            {order.shippingAddress.firstName}{" "}
-                            {order.shippingAddress.lastName}
-                          </div>
-                          <div>{order.shippingAddress.address}</div>
-                          <div>
-                            {order.shippingAddress.city},{" "}
-                            {order.shippingAddress.postalCode}
-                          </div>
-                          <div>Phone: {order.shippingAddress.phone || "—"}</div>
-                        </div>
-                      ) : (
-                        <div style={{ color: "#777" }}>No address</div>
-                      )}
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
                     </div>
 
-                    {/* Items + Summary */}
-                    <div style={{ flex: "1.4", minWidth: "300px" }}>
-                      <div
+                    <div>
+                      <label style={{ fontSize: "0.85rem", color: "#6b7280", display: "block", marginBottom: "6px" }}>
+                        Payment
+                      </label>
+                      <select
+                        value={order.paymentStatus || "paid"}
+                        onChange={(e) => updateOrder(order.id, { paymentStatus: e.target.value })}
                         style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          marginBottom: "8px",
-                          color: "#111",
+                          padding: "10px 14px",
+                          borderRadius: "6px",
+                          border: "1px solid #d1d5db",
+                          minWidth: "160px",
                         }}
                       >
-                        Items ({order.items?.length || 0})
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="refunded">Refunded</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+                      <button
+                        onClick={() => navigate(`/orders/${order.id}`)}
+                        style={{
+                          padding: "10px 20px",
+                          border: "1px solid #3b82f6",
+                          color: "#3b82f6",
+                          background: "transparent",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        View Order
+                      </button>
+
+                      <button
+                        onClick={() => handleEditOrder(order)}
+                        style={{
+                          padding: "10px 20px",
+                          border: "1px solid #8b5cf6",
+                          color: "#8b5cf6",
+                          background: "transparent",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <Edit size={16} /> Edit
+                      </button>
+
+                      <button
+                        onClick={() => updateOrder(order.id, { status: "shipped" })}
+                        disabled={order.status === "shipped" || order.status === "delivered"}
+                        style={{
+                          padding: "10px 20px",
+                          background: order.status === "shipped" || order.status === "delivered" ? "#d1d5db" : "#f59e0b",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: order.status === "shipped" || order.status === "delivered" ? "not-allowed" : "pointer",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Mark as Shipped
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "40px", flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: "280px" }}>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "12px" }}>
+                      Shipping Address
+                    </div>
+                    {order.shippingAddress ? (
+                      <div style={{ fontSize: "0.95rem", lineHeight: "1.6", color: "#374151" }}>
+                        <div>
+                          {order.shippingAddress.firstName} {order.shippingAddress.lastName}
+                        </div>
+                        <div>{order.shippingAddress.address}</div>
+                        <div>
+                          {order.shippingAddress.city}, {order.shippingAddress.postalCode}
+                        </div>
+                        <div style={{ marginTop: "8px" }}>
+                          Phone: {order.shippingAddress.phone || "—"}
+                        </div>
                       </div>
-                      <div style={{ fontSize: "13px", lineHeight: "1.6" }}>
-                        {order.items?.map((it, i) => (
+                    ) : (
+                      <div style={{ color: "#9ca3af" }}>No shipping address provided</div>
+                    )}
+                  </div>
+
+                  <div style={{ flex: 1.6, minWidth: "320px" }}>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "12px" }}>
+                      Items ({order.items?.reduce((sum, it) => sum + (it.quantity || 1), 0) || 0})
+                    </div>
+
+                    {order.items?.length > 0 ? (
+                      <div style={{ marginBottom: "16px" }}>
+                        {order.items.map((it, i) => (
                           <div
                             key={i}
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
-                              marginBottom: "4px",
+                              padding: "12px 0",
+                              borderBottom: "1px solid #f0f0f0",
                             }}
                           >
-                            <span style={{ color: "#0066c0" }}>
-                              {it.name || it.title || "Item"}
+                            <span style={{ color: "#2563eb", fontWeight: 500 }}>
+                              {it.name || it.title || "Unnamed item"} {it.quantity > 1 ? `x ${it.quantity}` : ""}
                             </span>
-                            <span>₹{(it.price || 0).toFixed(2)}</span>
+                            <span style={{ fontWeight: 600 }}>₹{(it.price * (it.quantity || 1)).toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <div style={{ color: "#9ca3af", marginBottom: "16px" }}>No items in this order</div>
+                    )}
 
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                        }}
-                      >
-                        Total:{" "}
-                        <span style={{ color: "#b12704" }}>
-                          ₹{order.total?.toFixed(2) || "—"}
-                        </span>
-                      </div>
+                    <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#b91c1c" }}>
+                      Total: ₹{order.total?.toFixed(2) || "0.00"}
                     </div>
                   </div>
-
-                  {/* Status badge (Amazon style pill) */}
-                  {/* <div style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    backgroundColor: statusStyle.bg,
-                    color: statusStyle.color,
-                    border: `1px solid ₹{statusStyle.border || statusStyle.color}`,
-                  }}>
-                    {(order.status || 'PENDING').toUpperCase()}
-                  </div> */}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
