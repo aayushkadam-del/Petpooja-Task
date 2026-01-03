@@ -19,8 +19,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Latest Apple iPhone with Titanium design, A17 Pro chip, and advanced camera system.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/81Sig6biNGL._AC_SL1500_.jpg",
+    image: "/images/products/iphone15.jpg",
     discountPercentage: "5",
+    country: "USA",
   },
   {
     id: "tp2",
@@ -29,8 +30,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Premium Android smartphone with Galaxy AI, 200MP camera, and S Pen.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/71RVuS3q9QL._AC_SL1500_.jpg",
+    image: "/images/products/samsung-s24.jpg",
     discountPercentage: "10",
+    country: "Japan",
   },
   {
     id: "tp3",
@@ -39,8 +41,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Supercharged by M2, 13.6-inch Liquid Retina Display, 8GB RAM, 256GB SSD.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/71f5Eu5lJSL._AC_SL1500_.jpg",
+    image: "/images/products/macbook.jpg",
     discountPercentage: "12",
+    country: "USA",
   },
   {
     id: "tp4",
@@ -49,8 +52,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Industry leading noise canceling headphones with Auto NC Optimizer.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/51aBtkSTh7L._AC_SL1000_.jpg",
+    image: "/images/products/sony-headphones.jpg",
     discountPercentage: "15",
+    country: "Japan",
   },
   {
     id: "tp5",
@@ -59,8 +63,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Iconic basketball shoes with premium leather and classic silhouette.",
     category: "Clothing",
-    image: "https://m.media-amazon.com/images/I/6125yAfsJKL._AC_UX679_.jpg",
+    image: "/images/products/nike-airmax.jpg",
     discountPercentage: "0",
+    country: "USA",
   },
   {
     id: "tp6",
@@ -69,8 +74,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Performance wireless mouse with ultrafast scrolling and 8K DPI tracking.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/61ni3t1ryQL._AC_SL1500_.jpg",
+    image: "/images/products/logitech-mouse.jpg",
     discountPercentage: "8",
+    country: "USA",
   },
   {
     id: "tp7",
@@ -79,8 +85,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Powerful laptop with 15.6-inch OLED display, i9 processor, and NVIDIA RTX graphics.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/81-nE8tPj0L._AC_SL1500_.jpg",
+    image: "/images/products/dell-xps.jpg",
     discountPercentage: "5",
+    country: "USA",
   },
   {
     id: "tp8",
@@ -89,8 +96,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Immersive audio headphones with world-class noise cancellation and spatial audio.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/51XvC3mEOfL._AC_SL1500_.jpg",
+    image: "/images/products/bose-qc.jpg",
     discountPercentage: "10",
+    country: "USA",
   },
   {
     id: "tp9",
@@ -99,8 +107,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Smarter, brighter, and more powerful with advanced health and fitness tracking.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/71YdbLh2p1L._AC_SL1500_.jpg",
+    image: "/images/products/apple-watch.jpg",
     discountPercentage: "7",
+    country: "USA",
   },
   {
     id: "tp10",
@@ -109,8 +118,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "6.8-inch display, adjustable warm light, and up to 10 weeks of battery life.",
     category: "Books",
-    image: "https://m.media-amazon.com/images/I/51fIe6YyvXL._AC_SL1000_.jpg",
+    image: "/images/products/kindle.jpg",
     discountPercentage: "15",
+    country: "USA",
   },
   {
     id: "tp11",
@@ -119,8 +129,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Brilliant Liquid Retina XDR display, M2 chip, and Apple Pencil Hover support.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/81c+9BOQNWL._AC_SL1500_.jpg",
+    image: "/images/products/ipad-pro.jpg",
     discountPercentage: "5",
+    country: "USA",
   },
   {
     id: "tp12",
@@ -129,8 +140,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Professional full-frame mirrorless camera with 45MP sensor and 8K video.",
     category: "Electronics",
-    image: "https://m.media-amazon.com/images/I/81F-7mJ6VWL._AC_SL1500_.jpg",
+    image: "/images/products/canon-r5.jpg",
     discountPercentage: "0",
+    country: "Japan",
   },
   {
     id: "tp13",
@@ -139,8 +151,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Electric pressure cooker, slow cooker, rice cooker, and more in one appliance.",
     category: "Home & Garden",
-    image: "https://m.media-amazon.com/images/I/61S8n6xKFIL._AC_SL1500_.jpg",
+    image: "/images/products/instant-pot.jpg",
     discountPercentage: "20",
+    country: "Canada",
   },
   {
     id: "tp14",
@@ -149,8 +162,9 @@ const PRODUCT_TEMPLATES = [
     description:
       "Handheld gaming console with 7-inch OLED screen and enhanced audio.",
     category: "Toys",
-    image: "https://m.media-amazon.com/images/I/61m9R6V-U0L._AC_SL1500_.jpg",
+    image: "/images/products/switch.jpg",
     discountPercentage: "5",
+    country: "Japan",
   },
   {
     id: "tp15",
@@ -159,8 +173,20 @@ const PRODUCT_TEMPLATES = [
     description:
       "Classic straight-leg jeans with button fly and timeless style.",
     category: "Clothing",
-    image: "https://m.media-amazon.com/images/I/81+m0Q6Bv8L._AC_UX679_.jpg",
+    image: "/images/products/levis-jeans.jpg",
     discountPercentage: "30",
+    country: "USA",
+  },
+   {
+    id: "1",
+    name: "Campus Runner Shoes`",
+    price: "3499",
+    description:
+      "Classic straight-leg jeans with button fly and timeless style.",
+    category: "Clothing",
+    image: "/images/products/levis-jeans.jpg",
+    discountPercentage: "30",
+    country: "India",
   },
 ];
 
@@ -226,7 +252,7 @@ const AddProduct = () => {
   );
 
   const handleTemplateSelect = (template) => {
-    console.log(template, "selected template ");
+    // console.log(template, "selected template ");
     setFormData((prev) => ({
       ...prev,
       name: template.name,
@@ -235,6 +261,7 @@ const AddProduct = () => {
       category: template.category,
       image: template.image,
       discountPercentage: template.discountPercentage,
+      country: template.country || "India",
     }));
     // Clear errors for auto-filled fields
     setErrors({});
@@ -511,7 +538,15 @@ const AddProduct = () => {
                       alignItems: "center"
                     }}
                   >
-                    <img src={template.image} alt="" style={{ width: "40px", height: "40px", objectFit: "contain" }} />
+                    <img 
+                      src={template.image} 
+                      alt="" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/40?text=NA";
+                      }}
+                      style={{ width: "40px", height: "40px", objectFit: "contain" }} 
+                    />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "12px", fontWeight: "600", color: "#0F1111", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{template.name}</div>
                       <div style={{ fontSize: "11px", color: "#B12704", fontWeight: "bold" }}>₹{parseFloat(template.price).toLocaleString()}</div>
@@ -568,6 +603,20 @@ const AddProduct = () => {
                     <div>
                       <label style={labelStyle}>Discount %</label>
                       <input type="number" name="discountPercentage" value={formData.discountPercentage} onChange={handleChange} style={inputStyle} />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Country *</label>
+                      <select name="country" value={formData.country} onChange={handleChange} style={inputStyle}>
+                        <option value="India">India</option>
+                        <option value="USA">USA</option>
+                        <option value="UK">UK</option>
+                        <option value="Canada">Canada</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Japan">Japan</option>
+                      </select>
                     </div>
 
                     <div style={{ gridColumn: "span 2" }}>

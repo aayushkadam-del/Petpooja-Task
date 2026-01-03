@@ -33,17 +33,15 @@ export default function ShoppingCart() {
         .where("userId")
         .equals(currentUser.id)
         .toArray();
-
+ 
       if (cartEntries.length === 0) {
         setCartItems([]);
         setLoading(false);
         return;
       }
 
-      // Get unique product IDs
       const productIds = [...new Set(cartEntries.map((e) => e.productId))];
 
-      // Fetch current product data (including discount)
       const products = await db.products
         .where("id")
         .anyOf(productIds)
@@ -53,13 +51,12 @@ export default function ShoppingCart() {
         productMap[p.id] = p;
       });
 
-      // Group + enrich with fresh product data
       const grouped = cartEntries.reduce((acc, entry) => {
         const pid = entry.productId;
         if (!acc[pid]) {
           const prod = productMap[pid] || {};
           acc[pid] = {
-            ...entry, // name, price, image etc. (assuming stored at add-to-cart time)
+            ...entry, 
             productId: pid,
             quantity: 0,
             cartIds: [],
@@ -67,6 +64,7 @@ export default function ShoppingCart() {
             originalPrice: prod.price || entry.price,
           };
         }
+
         acc[pid].quantity += 1;
         acc[pid].cartIds.push(entry.id);
         return acc;
@@ -187,7 +185,7 @@ export default function ShoppingCart() {
                 position: "relative",
               }}
             >
-              <div style={{ position: "relative" }}>
+              {/* <div style={{ position: "relative" }}>
                 <ShoppingCartIcon size={24} />
                 {cartCount > 0 && (
                   <span
@@ -206,7 +204,7 @@ export default function ShoppingCart() {
                     {cartCount}
                   </span>
                 )}
-              </div>
+              </div> */}
             </div>
             <button
               onClick={handleContinueShopping}
@@ -368,6 +366,11 @@ export default function ShoppingCart() {
                             "https://via.placeholder.com/100?text=No+Image"
                           }
                           alt={item.name}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src =
+                              "https://via.placeholder.com/100?text=No+Image";
+                          }}
                           style={{
                             maxWidth: "100%",
                             maxHeight: "100%",

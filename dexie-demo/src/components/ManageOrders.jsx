@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle, XCircle, RefreshCw, ArrowLeft, Edit, Plus, Trash2 } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, ArrowLeft, Edit, Plus, Trash2, Download, X } from "lucide-react";
 import db from "../db/db";
 
 export default function ManageOrders() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("cards");
+  const [viewMode, setViewMode] = useState("table");
   const [currentPage, setCurrentPage] = useState(1);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
   const pageSize = 10;
 
@@ -26,13 +28,9 @@ export default function ManageOrders() {
 
   const handleEditOrder = async (order) => {
     try {
-      // Clear existing cart for the current user
       await db.cart.where("userId").equals(currentUser.id).delete();
 
-      // Add order items back to the cart
       for (const item of order.items) {
-        // If the item has a productId, we use it. Otherwise, we might have an issue.
-        // Assuming items in order have productId.
         for (let i = 0; i < (item.quantity || 1); i++) {
           await db.cart.add({
             userId: currentUser.id,
@@ -45,7 +43,6 @@ export default function ManageOrders() {
         }
       }
 
-      // Save order info for checkout
       sessionStorage.setItem("editingOrder", JSON.stringify(order));
       navigate("/marketplace");
     } catch (err) {
@@ -64,6 +61,7 @@ export default function ManageOrders() {
           return { ...o, _user: user };
         })
       );
+      
       setOrders(withUser);
       setCurrentPage(1);
     } catch (err) {
@@ -71,6 +69,153 @@ export default function ManageOrders() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportToCSV = () => {
+    if (orders.length === 0) return;
+
+    let filteredOrders = [...orders];
+    if (fromDate) {
+      filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) >= new Date(fromDate));
+    }
+    if (toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) <= endOfDay);
+    }
+
+    if (filteredOrders.length === 0) {
+      alert("No orders found in this date range.");
+      return;
+    }
+
+    const headers = [
+      "Order ID",
+      "Date",
+      "time",
+      "Customer Name",
+      "Customer Email",
+      "Status",
+      "Payment Status",
+      "Items Count",
+      "Subtotal",
+      "Savings",
+      "Total",
+      "Shipping Address",
+      "City",
+      "Postal Code",
+    ];
+
+    const rows = filteredOrders.map((order) => {
+      const itemsCount = order?.items?.reduce((sum, it) => sum + (it.quantity || 1), 0) || 0;
+      const address = order?.shippingAddress
+        ? `${order.shippingAddress.address}`.replace(/,/g, " ")
+        : "—";
+        console.log('address', address);
+      
+      return [
+        order.id,
+        formatDate(order.createdAt),
+        order._user?.name || "Guest",
+        order._user?.email || "—",
+        order.status || "pending",
+        order.paymentStatus || "paid",
+        itemsCount,
+        order.subtotal?.toFixed(2) || "0.00",
+        order.savings?.toFixed(2) || "0.00",
+        order.total?.toFixed(2) || "0.00",
+        address,
+        order.shippingAddress?.city || "—",
+        order.shippingAddress?.postalCode || "—",
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const filename = fromDate && toDate 
+      ? `orders_${fromDate}_to_${toDate}.csv`
+      : `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const exportItemsToCSV = () => {
+    if (orders.length === 0) return;
+
+    let filteredOrders = [...orders];
+    if (fromDate) {
+      filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) >= new Date(fromDate));
+    }
+    if (toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      filteredOrders = filteredOrders.filter(o => new Date(o.createdAt) <= endOfDay);
+    }
+
+    if (filteredOrders.length === 0) {
+      alert("No items found in this date range.");
+      return;
+    }
+
+    const headers = [
+      "Order ID",
+      "Date",
+      "time",
+      "Customer Name",
+      "Product ID",
+      "Product Name",
+      "Price",
+      "Discount %",
+      "Quantity",
+      "Item Total",
+      "Status",
+    ];
+
+    const rows = [];
+    filteredOrders.forEach((order) => {
+      order.items?.forEach((item) => {
+        rows.push([
+          order.id,
+          formatDate(order.createdAt),
+          order._user?.name || "Guest",
+          item.productId || "—",
+          (item.name || "—").replace(/,/g, " "),
+          item.price?.toFixed(2) || "0.00",
+          item.discountPercentage || 0,
+          item.quantity || 1,
+          ((item.price || 0) * (item.quantity || 1)).toFixed(2),
+          order.status || "pending",
+        ]);
+      });
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const filename = fromDate && toDate 
+      ? `item_wise_orders_${fromDate}_to_${toDate}.csv`
+      : `item_wise_orders_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const updateOrder = async (id, patch) => {
@@ -173,6 +318,23 @@ export default function ManageOrders() {
     </div>
   );
 
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalSavings = orders.reduce((sum, o) => sum + (o.savings || 0), 0);
+
+  const highestOrderItem = orders.reduce((highest, order) => {
+    if (!order.items || order.items.length === 0) return highest;
+    const orderHighest = order.items.reduce((max, item) => {
+      const itemTotal = (item.price || 0) * (item.quantity || 1);
+      const maxTotal = (max.price || 0) * (max.quantity || 1);
+      return itemTotal > maxTotal ? item : max;
+    }, { price: 0, quantity: 0 });
+
+    const highestTotal = (highest.price || 0) * (highest.quantity || 1);
+    const orderHighestTotal = (orderHighest.price || 0) * (orderHighest.quantity || 1);
+    
+    return orderHighestTotal > highestTotal ? orderHighest : highest;
+  }, { price: 0, quantity: 0 });
+
   return (
     <div
       style={{
@@ -198,68 +360,177 @@ export default function ManageOrders() {
             Manage Orders
           </h1>
 
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
             <button
               onClick={() => navigate("/dashboard")}
               style={{
-                padding: "10px 20px",
+                padding: "6px 12px",
                 border: "1px solid #d1d5db",
                 borderRadius: "6px",
                 background: "#fff",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "6px",
                 cursor: "pointer",
+                fontSize: "0.85rem",
               }}
             >
-              <ArrowLeft size={18} /> Back to Dashboard
+              <ArrowLeft size={16} /> Dashboard
             </button>
 
             <button
               onClick={loadOrders}
               style={{
-                padding: "10px 20px",
+                padding: "6px 12px",
                 border: "1px solid #d1d5db",
                 borderRadius: "6px",
                 background: "#fff",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "6px",
                 cursor: "pointer",
+                fontSize: "0.85rem",
               }}
             >
-              <RefreshCw size={18} /> Refresh
+              <RefreshCw size={16} /> Refresh
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#fff", padding: "4px 10px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
+              <span style={{ fontSize: "0.8rem", color: "#6b7280", fontWeight: 500 }}>From:</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={{ border: "none", outline: "none", fontSize: "0.85rem", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "0.8rem", color: "#6b7280", fontWeight: 500 }}>To:</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                style={{ border: "none", outline: "none", fontSize: "0.85rem", cursor: "pointer" }}
+              />
+              {(fromDate || toDate) && (
+                <button
+                  onClick={() => {
+                    setFromDate("");
+                    setToDate("");
+                  }}
+                  title="Clear dates"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#ddd7d7ff",
+                    color: "#2f2e2eff",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    cursor: "pointer",
+                    marginLeft: "4px",
+                    padding: 0
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={exportToCSV}
+              style={{
+                padding: "6px 12px",
+                border: "1px solid #059669",
+                borderRadius: "6px",
+                background: "#059669",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+              }}
+            >
+              <Download size={16} /> Export
             </button>
 
             <button
-              onClick={() => setViewMode("cards")}
+              onClick={exportItemsToCSV}
               style={{
-                padding: "10px 20px",
-                border: "1px solid #d1d5db",
+                padding: "6px 12px",
+                border: "1px solid #0891b2",
                 borderRadius: "6px",
-                background: viewMode === "cards" ? "#f59e0b" : "#fff",
-                color: viewMode === "cards" ? "#fff" : "#111",
-                fontWeight: viewMode === "cards" ? 600 : 400,
+                background: "#0891b2",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
                 cursor: "pointer",
+                fontWeight: 600,
+                fontSize: "0.85rem",
               }}
             >
-              Card View
+              <Download size={16} /> Item-wise
             </button>
 
-            <button
-              onClick={() => setViewMode("table")}
-              style={{
-                padding: "10px 20px",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-                background: viewMode === "table" ? "#f59e0b" : "#fff",
-                color: viewMode === "table" ? "#fff" : "#111",
-                fontWeight: viewMode === "table" ? 600 : 400,
-                cursor: "pointer",
-              }}
-            >
-              Table View
-            </button>
+            <div style={{ display: "flex",  borderRadius: "6px", overflow: "hidden", gap:'3px'}}>
+              <button
+                onClick={() => setViewMode("cards")}
+                style={{
+                  padding: "6px 12px",
+                  border: "none",
+                  background: viewMode === "cards" ? "#f59e0b" : "#fff",
+                  color: viewMode === "cards" ? "#fff" : "#111",
+                  fontWeight: viewMode === "cards" ? 600 : 400,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                }}
+              >
+                Chart
+              </button>
+            
+              <button
+                onClick={() => setViewMode("table")}
+                style={{
+                  padding: "6px 12px",
+                  borderLeft: "1px solid #d1d5db",
+                  background: viewMode === "table" ? "#f59e0b" : "#fff",
+                  color: viewMode === "table" ? "#fff" : "#111",
+                  fontWeight: viewMode === "table" ? 600 : 400,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                }}
+              >
+                Table
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "32px" }}>
+          <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #ddd", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ color: "#6b7280", fontSize: "0.9rem", marginBottom: "8px" }}>Total Orders</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111" }}>{orders.length}</div>
+          </div>
+          <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #ddd", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ color: "#6b7280", fontSize: "0.9rem", marginBottom: "8px" }}>Total Revenue</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#b91c1c" }}>₹{totalRevenue.toFixed(2)}</div>
+          </div>
+          <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #ddd", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ color: "#6b7280", fontSize: "0.9rem", marginBottom: "8px" }}>Total Customer Savings</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#059669" }}>₹{totalSavings.toFixed(2)}</div>
+          </div>
+          <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #ddd", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ color: "#6b7280", fontSize: "0.9rem", marginBottom: "8px" }}>Highest Value Item</div>
+            <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#2563eb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={highestOrderItem.name || highestOrderItem.title || "None"}>
+              {highestOrderItem.name || highestOrderItem.title || "None"}
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: "600", color: "#111", marginTop: "4px" }}>
+              Value: ₹{((highestOrderItem.price || 0) * (highestOrderItem.quantity || 1)).toFixed(2)}
+            </div>
           </div>
         </div>
 
@@ -327,7 +598,9 @@ export default function ManageOrders() {
                     <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Date</th>
                     <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Customer</th>
                     <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Status</th>
-                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Payment</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Items</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</th>
+                    <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Savings</th>
                     <th style={{ padding: "16px", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total</th>
                     <th style={{ padding: "16px", textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>Actions</th>
                   </tr>
@@ -362,21 +635,15 @@ export default function ManageOrders() {
                         </select>
                       </td>
                       <td style={{ padding: "16px" }}>
-                        <select
-                          value={order.paymentStatus || "paid"}
-                          onChange={(e) => updateOrder(order.id, { paymentStatus: e.target.value })}
-                          style={{
-                            padding: "8px 12px",
-                            borderRadius: "6px",
-                            border: "1px solid #d1d5db",
-                          }}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
-                          <option value="refunded">Refunded</option>
-                        </select>
+                        {order.items?.reduce((sum, it) => sum + (it.quantity || 1), 0) || 0}
                       </td>
-                      <td style={{ padding: "16px", fontWeight: 600 }}>
+                      <td style={{ padding: "16px" }}>
+                        ₹{order.subtotal?.toFixed(2) || "0.00"}
+                      </td>
+                      <td style={{ padding: "16px", color: "#059669" }}>
+                        -₹{order.savings?.toFixed(2) || "0.00"}
+                      </td>
+                      <td style={{ padding: "16px", fontWeight: 600, color: "#b91c1c" }}>
                         ₹{order.total?.toFixed(2) || "0.00"}
                       </td>
                       <td style={{ padding: "16px", textAlign: "right" }}>
@@ -512,7 +779,7 @@ export default function ManageOrders() {
                       <button
                         onClick={() => navigate(`/orders/${order.id}`)}
                         style={{
-                          padding: "10px 20px",
+                          padding: "8px 12px",
                           border: "1px solid #3b82f6",
                           color: "#3b82f6",
                           background: "transparent",
