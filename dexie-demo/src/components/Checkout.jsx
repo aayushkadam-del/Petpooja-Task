@@ -879,7 +879,7 @@ export default function Checkout() {
                           style={{
                             width: "100%",
                             padding: "10px 12px",
-                            border: `1px solid ₹{errors.cardNumber ? '#f44336' : '#ddd'}`,
+                            border: `1px solid ${errors.cardNumber ? '#f44336' : '#ddd'}`,
                             borderRadius: "4px",
                             fontSize: "14px",
                             boxSizing: "border-box",
@@ -931,7 +931,7 @@ export default function Checkout() {
                             style={{
                               width: "100%",
                               padding: "10px 12px",
-                              border: `1px solid ₹{errors.expiryDate ? '#f44336' : '#ddd'}`,
+                              border: `1px solid ${errors.expiryDate ? '#f44336' : '#ddd'}`,
                               borderRadius: "4px",
                               fontSize: "14px",
                               boxSizing: "border-box",
@@ -974,7 +974,7 @@ export default function Checkout() {
                             style={{
                               width: "100%",
                               padding: "10px 12px",
-                              border: `1px solid ₹{errors.cvv ? '#f44336' : '#ddd'}`,
+                              border: `1px solid ${errors.cvv ? '#f44336' : '#ddd'}`,
                               borderRadius: "4px",
                               fontSize: "14px",
                               boxSizing: "border-box",

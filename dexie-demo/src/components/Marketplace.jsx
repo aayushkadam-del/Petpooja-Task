@@ -5,6 +5,7 @@ import db from "../db/db";
 import { STATIC_PRODUCTS } from "../data/products";
 export default function Marketplace() {
   const navigate = useNavigate();
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
   const [products, setProducts] = useState([]);
   // console.log(products,"products")
   const [loading, setLoading] = useState(true);
@@ -13,9 +14,8 @@ export default function Marketplace() {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCountry, setSelectedCountry] = useState(currentUser?.country || "All");
   const [cartCount, setCartCount] = useState(0);
-
-  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
 
   useEffect(() => {
     if (!currentUser?.id) {
@@ -54,15 +54,29 @@ export default function Marketplace() {
     ...new Set(products.map((p) => p.category || "Uncategorized")),
   ];
 
+  const countries = currentUser?.role === "admin" 
+    ? ["All", ...new Set(products.map((p) => p.country || "India"))]
+    : [currentUser?.country || "India"];
+
   const filteredProducts = products.filter((p) => {
     const matchesCategory =
       selectedCategory === "All" || p.category === selectedCategory;
+    
+    // Enforce country filter for non-admins
+    const userCountry = currentUser?.country || "India";
+    const isAdmin = currentUser?.role === "admin";
+    
+    const matchesCountry = isAdmin 
+      ? (selectedCountry === "All" || (p.country || "India") === selectedCountry)
+      : (p.country || "India") === userCountry;
+
     const matchesSearch =
       p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const inStock = (p.quantity ?? 1) > 0;
-    return matchesCategory && matchesSearch && inStock;
+    return matchesCategory && matchesCountry && matchesSearch && inStock;
   });
+  console.log(selectedCountry,"selectedCountry")
 
   // console.log(filteredProducts,"filteredProducts")
   const handleAddToCart = async () => {
@@ -290,6 +304,40 @@ export default function Marketplace() {
               {cat}
             </button>
           ))}
+
+          <div
+            style={{
+              padding: "20px 20px 16px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              color: "#0F1111",
+              borderTop: "1px solid #eee",
+              marginTop: "10px"
+            }}
+          >
+            Countries
+          </div>
+          {countries.map((c) => (
+            <button
+              key={c}
+              onClick={() => setSelectedCountry(c)}
+              style={{
+                width: "100%",
+                padding: "10px 20px",
+                textAlign: "left",
+                background:
+                  selectedCountry === c ? "#f0f8ff" : "transparent",
+                border: "none",
+                borderLeft:
+                  selectedCountry === c ? "4px solid #ff9900" : "none",
+                color: selectedCountry === c ? "#146eb4" : "#0F1111",
+                fontWeight: selectedCountry === c ? "600" : "400",
+                cursor: "pointer",
+              }}
+            >
+              {c}
+            </button>
+          ))}
         </aside>
 
         {/* Main */}
@@ -311,6 +359,7 @@ export default function Marketplace() {
               >
                 {filteredProducts.length} results
                 {selectedCategory !== "All" && ` in ${selectedCategory}`}
+                {selectedCountry !== "All" && ` from ${selectedCountry}`}
                 {searchQuery && ` for "${searchQuery}"`}
               </div>
 
@@ -371,6 +420,10 @@ export default function Marketplace() {
                             "https://via.placeholder.com/200?text=No+Image"
                           }
                           alt={product.name}
+                          onError={(e) => {
+                            e.target.onerror = null; 
+                            e.target.src = "https://via.placeholder.com/200?text=No+Image";
+                          }}
                           style={{
                             maxWidth: "100%",
                             maxHeight: "100%",
@@ -389,6 +442,12 @@ export default function Marketplace() {
                           }}
                         >
                           {product.name}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                           <span style={{ fontSize: "12px", color: "#565959", background: "#f3f4f6", padding: "2px 6px", borderRadius: "4px" }}>
+                             {product.country || "India"}
+                           </span>
+                           <span style={{ fontSize: "12px", color: "#007185" }}>{product.category}</span>
                         </div>
                         <div
                           style={{
@@ -464,6 +523,10 @@ export default function Marketplace() {
               <img
                 src={selectedProduct.image || "https://via.placeholder.com/400"}
                 alt={selectedProduct.name}
+                onError={(e) => {
+                  e.target.onerror = null; 
+                  e.target.src = "https://via.placeholder.com/400?text=No+Image";
+                }}
                 style={{
                   maxWidth: "100%",
                   maxHeight: "500px",

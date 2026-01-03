@@ -80,6 +80,7 @@ export default function ManageInventory() {
       description: product.description || "",
       category: product.category || "Other",
       image: product.image || "",
+      country: product.country || "India",
     });
   };
 
@@ -133,7 +134,8 @@ export default function ManageInventory() {
   const filteredProducts = products.filter(
     (p) =>
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      p.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.country?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -436,7 +438,10 @@ export default function ManageInventory() {
                         height: "100%",
                         objectFit: "cover",
                       }}
-                      onError={(e) => (e.target.style.display = "none")}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/200?text=No+Image";
+                      }}
                     />
                   </div>
                 )}
@@ -520,6 +525,28 @@ export default function ManageInventory() {
                           marginBottom: "8px",
                         }}
                       />
+                      <select
+                        value={editData.country}
+                        onChange={(e) =>
+                          handleEditChange("country", e.target.value)
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "4px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <option value="India">India</option>
+                        <option value="USA">USA</option>
+                        <option value="UK">UK</option>
+                        <option value="Canada">Canada</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Japan">Japan</option>
+                      </select>
                       <input
                         type="url"
                         value={editData.image}
@@ -594,6 +621,18 @@ export default function ManageInventory() {
                           }}
                         >
                           {product.category}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            color: "#666",
+                            background: "#e0f2fe",
+                            padding: "4px 8px",
+                            borderRadius: 4,
+                            marginLeft: "4px"
+                          }}
+                        >
+                          {product.country || "India"}
                         </span>
                         <span
                           style={{
@@ -774,6 +813,15 @@ export default function ManageInventory() {
                   </th>
                   <th
                     style={{
+                      textAlign: "left",
+                      padding: "10px",
+                      borderBottom: "2px solid #eef2f7",
+                    }}
+                  >
+                    Country
+                  </th>
+                  <th
+                    style={{
                       textAlign: "right",
                       padding: "10px",
                       borderBottom: "2px solid #eef2f7",
@@ -850,6 +898,30 @@ export default function ManageInventory() {
                             <option>Other</option>
                           </select>
                         </td>
+                        <td style={{ padding: "10px" }}>
+                          <select
+                            value={editData.country}
+                            onChange={(e) =>
+                              handleEditChange("country", e.target.value)
+                            }
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              border: "1px solid #d1d5db",
+                              borderRadius: 4,
+                              fontSize: "14px",
+                            }}
+                          >
+                            <option value="India">India</option>
+                            <option value="USA">USA</option>
+                            <option value="UK">UK</option>
+                            <option value="Canada">Canada</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Germany">Germany</option>
+                            <option value="France">France</option>
+                            <option value="Japan">Japan</option>
+                          </select>
+                        </td>
                         <td style={{ padding: "10px", textAlign: "right" }}>
                           <input
                             type="number"
@@ -898,6 +970,7 @@ export default function ManageInventory() {
                           </div>
                         </td>
                         <td style={{ padding: "10px" }}>{product.category}</td>
+                        <td style={{ padding: "10px" }}>{product.country || "India"}</td>
                         <td style={{ padding: "10px", textAlign: "right" }}>
                           ₹{product.price?.toFixed(2) || "0.00"}
                         </td>
