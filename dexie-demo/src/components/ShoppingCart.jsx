@@ -33,7 +33,7 @@ export default function ShoppingCart() {
         .where("userId")
         .equals(currentUser.id)
         .toArray();
-
+ 
       if (cartEntries.length === 0) {
         setCartItems([]);
         setLoading(false);
@@ -64,7 +64,7 @@ export default function ShoppingCart() {
             originalPrice: prod.price || entry.price,
           };
         }
-        
+
         acc[pid].quantity += 1;
         acc[pid].cartIds.push(entry.id);
         return acc;
